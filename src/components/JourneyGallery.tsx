@@ -32,10 +32,8 @@ export function JourneyGallery({ location, onClose }: Props) {
       if (event.key === 'ArrowRight') setActiveIndex((activeIndex + 1) % artworks.length)
       if (event.key === 'ArrowLeft') setActiveIndex((activeIndex - 1 + artworks.length) % artworks.length)
     }
-    document.body.style.overflow = 'hidden'
     addEventListener('keydown', onKeyDown)
     return () => {
-      document.body.style.overflow = ''
       removeEventListener('keydown', onKeyDown)
     }
   }, [activeIndex, artworks.length, onClose])

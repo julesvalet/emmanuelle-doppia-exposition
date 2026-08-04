@@ -4,6 +4,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { australiaOutline, type GeoPoint } from '../data/australiaOutline'
 import { journeyLocations, type JourneyLocation } from '../data/journey'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import { JourneyGallery } from './JourneyGallery'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -171,6 +172,7 @@ export function AustraliaEarthZoom() {
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   const [openLocationId, setOpenLocationId] = useState<string | null>(null)
   const openLocation = journeyLocations.find((location) => location.id === openLocationId) ?? null
+  useModalScrollLock(openLocation !== null)
 
   useEffect(() => {
     const section = sectionRef.current
@@ -542,15 +544,6 @@ export function AustraliaEarthZoom() {
       intersectionObserver.disconnect()
     }
   }, [])
-
-  useEffect(() => {
-    if (!openLocation) return
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = previousOverflow
-    }
-  }, [openLocation])
 
   return (
     <section className="earth-zoom" id="voyage" aria-labelledby="earth-zoom-title" data-chapter ref={sectionRef}>

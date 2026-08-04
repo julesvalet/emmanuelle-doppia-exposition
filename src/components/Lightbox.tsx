@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import type { GalleryItem } from '../data/gallery'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 
 type Props = {
   items: GalleryItem[]
@@ -8,6 +9,8 @@ type Props = {
 }
 
 export function Lightbox({ items, activeIndex, onChange }: Props) {
+  useModalScrollLock(activeIndex !== null)
+
   useEffect(() => {
     if (activeIndex === null) return
     const onKeyDown = (event: KeyboardEvent) => {
@@ -15,10 +18,8 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
       if (event.key === 'ArrowRight') onChange((activeIndex + 1) % items.length)
       if (event.key === 'ArrowLeft') onChange((activeIndex - 1 + items.length) % items.length)
     }
-    document.body.style.overflow = 'hidden'
     addEventListener('keydown', onKeyDown)
     return () => {
-      document.body.style.overflow = ''
       removeEventListener('keydown', onKeyDown)
     }
   }, [activeIndex, items.length, onChange])

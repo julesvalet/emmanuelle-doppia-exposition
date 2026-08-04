@@ -13,6 +13,7 @@ import { Logo } from './components/Logo'
 import { ParticleRibbonOverlay } from './components/ParticleRibbonOverlay'
 import { ParticleCamera } from './components/ParticleCamera'
 import { AustraliaEarthZoom } from './components/AustraliaEarthZoom'
+import { modalScrollLockEvent, type ModalScrollLockDetail } from './hooks/useModalScrollLock'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -29,6 +30,18 @@ function App() {
     const lenis = new Lenis({ duration: 1.15, smoothWheel: true })
     lenis.on('scroll', ScrollTrigger.update)
     const tick = (time: number) => lenis.raf(time * 1000)
+    const onModalScrollLock = (event: Event) => {
+      const { locked, scrollY } = (event as CustomEvent<ModalScrollLockDetail>).detail
+      if (locked) {
+        lenis.stop()
+        return
+      }
+
+      lenis.scrollTo(scrollY, { immediate: true, force: true })
+      lenis.start()
+      ScrollTrigger.update()
+    }
+    addEventListener(modalScrollLockEvent, onModalScrollLock)
     gsap.ticker.add(tick)
     gsap.ticker.lagSmoothing(0)
 
@@ -72,7 +85,12 @@ function App() {
       })
     }, app)
 
-    return () => { context.revert(); lenis.destroy(); gsap.ticker.remove(tick) }
+    return () => {
+      removeEventListener(modalScrollLockEvent, onModalScrollLock)
+      context.revert()
+      lenis.destroy()
+      gsap.ticker.remove(tick)
+    }
   }, [])
 
   return (
