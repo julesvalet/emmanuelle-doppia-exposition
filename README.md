@@ -2,6 +2,8 @@
 
 Expérience photographique immersive conçue pour l’exposition d’Emmanuelle Doppia.
 
+Démo publique : https://julesvalet.github.io/emmanuelle-doppia-exposition/
+
 ## Développement
 
 ```bash
