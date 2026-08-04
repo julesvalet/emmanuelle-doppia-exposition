@@ -16,7 +16,6 @@ type RibbonParticle = {
   phase: number
   drift: number
   size: number
-  alpha: number
   alphaBand: 0 | 1 | 2
   color: number
   dispersedX: number
@@ -28,11 +27,14 @@ type RibbonParticle = {
   behind: boolean
   edgeOverlap: boolean
   towardText: boolean
+  trailReach: number
 }
 
 type Bounds = { x: number; y: number; width: number; height: number }
 
 const TAU = Math.PI * 2
+const EDGE_SAMPLE_COUNT = 128
+const FALLBACK_PALETTE = ['rgb(22 18 24)', 'rgb(67 49 75)', 'rgb(112 72 82)', 'rgb(172 103 59)', 'rgb(226 151 70)', 'rgb(246 199 119)', 'rgb(194 166 151)', 'rgb(238 218 181)']
 const clamp = (value: number, minimum: number, maximum: number) => Math.min(maximum, Math.max(minimum, value))
 const mix = (from: number, to: number, progress: number) => from + (to - from) * progress
 
@@ -43,7 +45,7 @@ function extractPalette(image: HTMLImageElement) {
   sample.width = 72
   sample.height = 72
   const context = sample.getContext('2d', { willReadFrequently: true })
-  if (!context) return ['rgb(22 18 24)', 'rgb(67 49 75)', 'rgb(112 72 82)', 'rgb(172 103 59)', 'rgb(226 151 70)', 'rgb(246 199 119)', 'rgb(194 166 151)', 'rgb(238 218 181)']
+  if (!context) return FALLBACK_PALETTE
 
   context.drawImage(image, 0, 0, sample.width, sample.height)
   const pixels = context.getImageData(0, 0, sample.width, sample.height).data
@@ -93,6 +95,80 @@ function extractPalette(image: HTMLImageElement) {
   return selected.slice(0, 8).map((color) => `rgb(${Math.round(color.red)} ${Math.round(color.green)} ${Math.round(color.blue)})`)
 }
 
+function extractEdgePalette(image: HTMLImageElement, palette: string[]) {
+  const maximumSide = 180
+  const scale = maximumSide / Math.max(image.naturalWidth, image.naturalHeight, 1)
+  const sample = document.createElement('canvas')
+  sample.width = Math.max(24, Math.round(image.naturalWidth * scale))
+  sample.height = Math.max(24, Math.round(image.naturalHeight * scale))
+  const context = sample.getContext('2d', { willReadFrequently: true })
+  if (!context) return null
+
+  context.drawImage(image, 0, 0, sample.width, sample.height)
+  const pixels = context.getImageData(0, 0, sample.width, sample.height).data
+  const paletteRgb = palette.map((value) => {
+    const [red = 0, green = 0, blue = 0] = value.match(/\d+/g)?.map(Number) ?? []
+    return { red, green, blue }
+  })
+
+  const pixelAt = (x: number, y: number) => {
+    const safeX = clamp(Math.round(x), 0, sample.width - 1)
+    const safeY = clamp(Math.round(y), 0, sample.height - 1)
+    const offset = (safeY * sample.width + safeX) * 4
+    return { red: pixels[offset], green: pixels[offset + 1], blue: pixels[offset + 2] }
+  }
+
+  return Array.from({ length: 4 }, (_, side) => (
+    Array.from({ length: EDGE_SAMPLE_COUNT }, (_, index) => {
+      const along = index / (EDGE_SAMPLE_COUNT - 1)
+      let red = 0
+      let green = 0
+      let blue = 0
+      let samples = 0
+
+      for (let depth = 0; depth < 5; depth += 1) {
+        for (let tangent = -1; tangent <= 1; tangent += 1) {
+          let x = along * (sample.width - 1)
+          let y = along * (sample.height - 1)
+          if (side === 0) {
+            x += tangent
+            y = depth
+          } else if (side === 1) {
+            x = sample.width - 1 - depth
+            y += tangent
+          } else if (side === 2) {
+            x += tangent
+            y = sample.height - 1 - depth
+          } else {
+            x = depth
+            y += tangent
+          }
+          const color = pixelAt(x, y)
+          red += color.red
+          green += color.green
+          blue += color.blue
+          samples += 1
+        }
+      }
+
+      red /= samples
+      green /= samples
+      blue /= samples
+      let closest = 0
+      let closestDistance = Number.POSITIVE_INFINITY
+      for (let paletteIndex = 0; paletteIndex < paletteRgb.length; paletteIndex += 1) {
+        const color = paletteRgb[paletteIndex]
+        const distance = (red - color.red) ** 2 + (green - color.green) ** 2 + (blue - color.blue) ** 2
+        if (distance < closestDistance) {
+          closest = paletteIndex
+          closestDistance = distance
+        }
+      }
+      return closest
+    })
+  ))
+}
+
 export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibbonOverlayProps) {
   const rearCanvasRef = useRef<HTMLCanvasElement>(null)
   const middleCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -115,7 +191,8 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
       Array.from({ length: 24 }, () => [] as RibbonParticle[])
     ))
     const pointer = { x: -10_000, y: -10_000, active: false }
-    let palette = ['rgb(22 18 24)', 'rgb(67 49 75)', 'rgb(112 72 82)', 'rgb(172 103 59)', 'rgb(226 151 70)', 'rgb(246 199 119)', 'rgb(194 166 151)', 'rgb(238 218 181)']
+    let palette = [...FALLBACK_PALETTE]
+    let edgePalette: number[][] | null = null
     let photo: Bounds = { x: 0, y: 0, width: 1, height: 1 }
     let width = 1
     let height = 1
@@ -135,6 +212,7 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
       if (!image.complete || !image.naturalWidth) return
       try {
         palette = extractPalette(image)
+        edgePalette = extractEdgePalette(image, palette)
         const bloom = palette[Math.min(5, palette.length - 1)].match(/\d+/g)?.slice(0, 3).join(' ') ?? '226 151 70'
         section.style.setProperty('--photo-bloom-rgb', bloom)
       } catch {
@@ -157,17 +235,25 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
       particles.length = 0
       const compact = compactQuery.matches
       const count = compact
-        ? Math.min(560, Math.max(360, Math.round(width * 1.15)))
-        : Math.min(2800, Math.round(width * 1.4))
-      const cornerParticleCount = Math.round(count * .18)
+        ? Math.min(850, Math.max(520, Math.round(width * 1.65)))
+        : Math.min(5200, Math.round(width * 2.8))
+      const cornerParticleCount = Math.round(count * .2)
       const clusterCenters = [.08, .22, .43, .67, .86]
+
+      const colorForEdge = (side: number, along: number) => {
+        const strip = edgePalette?.[side]
+        if (!strip?.length) return Math.floor(Math.random() * palette.length)
+        const index = clamp(Math.round(along * (strip.length - 1) + (Math.random() + Math.random() - 1) * 3), 0, strip.length - 1)
+        return strip[index]
+      }
 
       for (let index = 0; index < count; index += 1) {
         const roll = Math.random()
         const layer: ParticleLayer = roll < .18 ? 0 : roll < .88 ? 1 : 2
         const cornerSeed = index < cornerParticleCount
+        const towardText = !compact && !cornerSeed && layer === 1 && Math.random() < .27
         const cornerSlot = index % 8
-        const side = cornerSeed ? Math.floor(cornerSlot / 2) : Math.floor(Math.random() * 4)
+        const side = towardText ? 1 : cornerSeed ? Math.floor(cornerSlot / 2) : Math.floor(Math.random() * 4)
         let along: number
 
         if (cornerSeed) {
@@ -182,7 +268,8 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
 
         const dispersedX = Math.random() * width
         const dispersedY = height * (.15 + Math.random() * .72)
-        const alpha = .2 + Math.random() * .52
+        const trailReach = towardText ? Math.pow(Math.random(), 1.15) : 0
+        const alpha = (.2 + Math.random() * .52) * (towardText ? .92 - trailReach * .42 : 1)
         particles.push({
           layer,
           side,
@@ -192,9 +279,8 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
           phase: Math.random() * TAU,
           drift: .22 + Math.random() * .42,
           size: compact ? .55 + Math.random() * 1.02 : .62 + Math.random() * 1.48,
-          alpha,
           alphaBand: alpha < .36 ? 0 : alpha < .55 ? 1 : 2,
-          color: Math.floor(Math.random() * 8),
+          color: colorForEdge(side, along),
           dispersedX,
           dispersedY,
           x: dispersedX,
@@ -202,8 +288,9 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
           vx: 0,
           vy: 0,
           behind: layer === 0 && Math.random() < .38,
-          edgeOverlap: layer === 2 && Math.random() < .62,
-          towardText: layer === 1 && Math.random() < .014,
+          edgeOverlap: !towardText && (layer === 2 ? Math.random() < .9 : layer === 1 && Math.random() < .28),
+          towardText,
+          trailReach,
         })
       }
     }
@@ -227,14 +314,14 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
 
     const targetFor = (particle: RibbonParticle, elapsed: number) => {
       const compact = compactQuery.matches
-      const margin = compact ? 1.5 : 2.5
+      const margin = compact ? .4 : .55
       const spread = compact
-        ? particle.layer === 0 ? 42 : particle.layer === 1 ? 32 : 18
-        : particle.layer === 0 ? 58 : particle.layer === 1 ? 44 : 23
+        ? particle.layer === 0 ? 38 : particle.layer === 1 ? 28 : 16
+        : particle.layer === 0 ? 56 : particle.layer === 1 ? 38 : 20
       const distance = particle.behind
         ? -(2 + particle.distance * (compact ? 9 : 14))
         : particle.edgeOverlap
-          ? -(1.25 + particle.distance * (compact ? 4 : 6.5))
+          ? -(.8 + particle.distance * (particle.layer === 2 ? compact ? 5 : 8 : compact ? 2.5 : 4))
           : margin + particle.distance * spread
       let x = photo.x
       let y = photo.y
@@ -279,8 +366,12 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
       y += cross * (particle.layer === 0 ? 8 : particle.layer === 1 ? 5 : 2.5)
 
       if (particle.towardText && !compact) {
-        x = mix(x, photo.x + photo.width + (width - photo.x - photo.width) * (.08 + particle.distance * .12), .24)
-        y = mix(y, photo.y + photo.height * (.18 + particle.along * .64), .18)
+        const availableWidth = Math.max(1, width - photo.x - photo.width)
+        const reach = particle.trailReach
+        x = photo.x + photo.width + availableWidth * (.018 + reach * .91)
+        const sourceY = photo.y + photo.height * (.045 + particle.along * .91)
+        const plume = Math.sin(particle.phase + reach * 5.4) * photo.height * (.018 + reach * .095)
+        y = sourceY + plume
       }
 
       return {
