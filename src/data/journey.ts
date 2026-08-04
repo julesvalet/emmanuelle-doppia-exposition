@@ -17,7 +17,8 @@ export type JourneyArtwork = {
   dimensions: string
   orientation: 'portrait' | 'landscape' | 'square'
   year?: string
-  description?: string
+  descriptionFr?: string
+  descriptionEn?: string
 }
 
 export type JourneyLocation = {
@@ -145,6 +146,8 @@ export const catalogueArtworks: JourneyArtwork[] = catalogue.map<JourneyArtwork>
     height: asset.height,
     dimensions: `${asset.width} × ${asset.height}`,
     orientation: asset.orientation,
+    descriptionFr: entry.descriptionFr,
+    descriptionEn: entry.descriptionEn,
   }
 })
 
