@@ -1,4 +1,5 @@
 import detectedAssets from 'virtual:gallery-assets'
+import { catalogue } from './catalogue'
 
 export type JourneyArtwork = {
   id: string
@@ -109,120 +110,34 @@ const locationDefinitions: LocationDefinition[] = [
 
 const filenameFromPath = (path: string) => path.split('/').at(-1) ?? ''
 
-const titleFromFilename = (filename: string) => filename
-  .replace(/\.[^.]+$/, '')
-
-export type CatalogueCorrespondence = {
-  pdfNumber: number
-  sourcePath: string | null
-  filename: string
-  title: string
-  location: string
-}
-
-const catalogueEntry = (pdfNumber: number, sourcePath: string | null, location: string): CatalogueCorrespondence => {
-  if (sourcePath === null) return { pdfNumber, sourcePath, filename: '', title: '', location }
-  const filename = filenameFromPath(sourcePath)
-  return { pdfNumber, sourcePath, filename, title: titleFromFilename(filename), location }
-}
-
-// Source d'ordre unique : lecture visuelle, page par page, du catalogue officiel.
-// Les chemins pointent exclusivement vers les originaux haute définition de Assets.
-export const catalogueCorrespondence: CatalogueCorrespondence[] = [
-  catalogueEntry(1, 'Uluru-Kata Tjuta/Uluru -8.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(2, 'Uluru-Kata Tjuta/Uluru - 9.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(3, 'Uluru-Kata Tjuta/Kata-Tjuta-2.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(4, 'Uluru-Kata Tjuta/Kata-Tjuta -1.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(5, 'Uluru-Kata Tjuta/Kata-Tjuta-3.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(6, 'Uluru-Kata Tjuta/Kata-Tjuta-4.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(7, 'Uluru-Kata Tjuta/Kata-Tjuta-5.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(8, 'Uluru-Kata Tjuta/Kata-Tjuta-8.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(9, 'Uluru-Kata Tjuta/Kata-Tjuta-7.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(10, 'Uluru-Kata Tjuta/Kata-Tjuta-6.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(11, 'Uluru-Kata Tjuta/Uluru -7.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(12, 'Uluru-Kata Tjuta/Kata-Tjuta-9.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(13, 'Uluru-Kata Tjuta/Kata-Tjuta-10.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(14, 'Uluru-Kata Tjuta/Uluru-5.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(15, 'Uluru-Kata Tjuta/Uluru- 2.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(16, 'Melbourne/Melbourne -1.JPG', 'melbourne'),
-  catalogueEntry(17, 'Melbourne/Melbourne -2.JPG', 'melbourne'),
-  catalogueEntry(18, 'Perth/Perth- 10.JPG', 'perth'),
-  catalogueEntry(19, 'Uluru-Kata Tjuta/Kata-Tjuta-12.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(20, 'Uluru-Kata Tjuta/Kata-Tjuta-11.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(21, 'Uluru-Kata Tjuta/Uluru-3.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(22, 'Uluru-Kata Tjuta/Uluru-10.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(23, 'Uluru-Kata Tjuta/Uluru -1.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(24, 'Uluru-Kata Tjuta/Uluru -6.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(25, 'Uluru-Kata Tjuta/Uluru- 4.jpg', 'uluru-kata-tjuta'),
-  catalogueEntry(26, 'Perth/Perth -1.JPG', 'perth'),
-  catalogueEntry(27, 'Perth/Perth -3.JPG', 'perth'),
-  catalogueEntry(28, 'Perth/Perth -2.JPG', 'perth'),
-  catalogueEntry(29, 'Perth/Perth -5.JPG', 'perth'),
-  catalogueEntry(30, 'Perth/Perth-6.JPG', 'perth'),
-  catalogueEntry(31, 'Perth/Perth -4.JPG', 'perth'),
-  catalogueEntry(32, 'Perth/Perth -7.JPG', 'perth'),
-  catalogueEntry(33, 'Perth/Perth -9.JPG', 'perth'),
-  catalogueEntry(34, 'Perth/Perth -8.JPG', 'perth'),
-  catalogueEntry(35, 'Adelaide/Adelaïde -1.jpg', 'adelaide'),
-  catalogueEntry(36, 'Adelaide/Adelaîde -2.jpg', 'adelaide'),
-  catalogueEntry(37, 'Adelaide/Adelaïde -3.jpg', 'adelaide'),
-  catalogueEntry(38, 'Adelaide/Adelaïde -4.jpg', 'adelaide'),
-  catalogueEntry(39, 'Adelaide/Adelaïde-5.jpg', 'adelaide'),
-  catalogueEntry(40, 'Adelaide/Adelaïde -6.jpg', 'adelaide'),
-  catalogueEntry(41, 'Kangaroo Island/Kangaroo Island -1.jpg', 'kangaroo-island'),
-  catalogueEntry(42, 'Kangaroo Island/Kangaroo Island-4.jpg', 'kangaroo-island'),
-  catalogueEntry(43, 'Kangaroo Island/Kangaroo Island-6.jpg', 'kangaroo-island'),
-  catalogueEntry(44, 'Kangaroo Island/Kangaroo Island-2.jpg', 'kangaroo-island'),
-  catalogueEntry(45, 'Kangaroo Island/Kangaroo Island-5.jpg', 'kangaroo-island'),
-  catalogueEntry(46, 'Kangaroo Island/Kangaroo Island-3.jpg', 'kangaroo-island'),
-  catalogueEntry(47, 'Sydney/Sydney - 2.JPG', 'sydney'),
-  catalogueEntry(48, 'Sydney/Sydney -3.JPG', 'sydney'),
-  catalogueEntry(49, 'Sydney/Sydney -4.JPG', 'sydney'),
-  catalogueEntry(50, 'Sydney/Sydney -5.JPG', 'sydney'),
-  catalogueEntry(51, 'Sydney/Sydney -1.JPG', 'sydney'),
-]
-
-export const missingCatalogueNumbers = catalogueCorrespondence
-  .filter((entry) => entry.sourcePath === null)
-  .map((entry) => entry.pdfNumber)
-export const catalogueArtworkCount = 51
+export const missingCatalogueNumbers: number[] = []
+export const catalogueArtworkCount = catalogue.length
 
 const assetsByPath = new Map(detectedAssets.map((asset) => [asset.path, asset]))
 const locationsById = new Map(locationDefinitions.map((location) => [location.id, location]))
 
-export const catalogueArtworks: JourneyArtwork[] = catalogueCorrespondence.flatMap<JourneyArtwork>((entry) => {
+const catalogueFiles = new Set<string>()
+catalogue.forEach((entry, index) => {
+  if (entry.number !== index + 1) throw new Error(`Ordre du catalogue invalide au n°${entry.number}.`)
+  if (!entry.title) throw new Error(`Titre officiel manquant au n°${entry.number}.`)
+  if (catalogueFiles.has(entry.file)) throw new Error(`Photographie HD dupliquée : ${entry.file}.`)
+  catalogueFiles.add(entry.file)
+})
+
+export const catalogueArtworks: JourneyArtwork[] = catalogue.map<JourneyArtwork>((entry) => {
   const location = locationsById.get(entry.location)
-  if (!location) return []
-  if (entry.sourcePath === null) {
-    return [{
-      id: `catalogue-${String(entry.pdfNumber).padStart(2, '0')}`,
-      src: '',
-      mobileSrc: '',
-      sourcePath: '',
-      filename: '',
-      title: '',
-      order: entry.pdfNumber,
-      alt: `Photographie ${entry.pdfNumber} : original haute définition manquant.`,
-      type: 'placeholder' as const,
-      location: entry.location,
-      width: 0,
-      height: 0,
-      dimensions: '',
-      orientation: 'landscape' as const,
-    }]
-  }
+  if (!location) throw new Error(`Lieu inconnu pour la photographie n°${entry.number}.`)
+  const asset = assetsByPath.get(entry.file)
+  if (!asset || asset.type !== 'image') throw new Error(`Photographie HD introuvable pour le n°${entry.number} : ${entry.file}.`)
 
-  const asset = assetsByPath.get(entry.sourcePath)
-  if (!asset || asset.type !== 'image') return []
-
-  return [{
-    id: `catalogue-${String(entry.pdfNumber).padStart(2, '0')}`,
+  return {
+    id: `catalogue-${String(entry.number).padStart(2, '0')}`,
     src: asset.src,
     mobileSrc: asset.mobileSrc,
-    sourcePath: entry.sourcePath,
-    filename: entry.filename,
+    sourcePath: entry.file,
+    filename: filenameFromPath(entry.file),
     title: entry.title,
-    order: entry.pdfNumber,
+    order: entry.number,
     alt: `${entry.title}, photographie de la série ${location.name} par Emmanuelle Doppia.`,
     type: 'image' as const,
     location: entry.location,
@@ -230,7 +145,7 @@ export const catalogueArtworks: JourneyArtwork[] = catalogueCorrespondence.flatM
     height: asset.height,
     dimensions: `${asset.width} × ${asset.height}`,
     orientation: asset.orientation,
-  }]
+  }
 })
 
 export const journeyLocations: JourneyLocation[] = locationDefinitions.map((location) => {

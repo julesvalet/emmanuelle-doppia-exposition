@@ -7,7 +7,6 @@ declare module 'virtual:gallery-assets' {
     path: string
     folder: string
     type: 'image' | 'video'
-    title: string
     width: number
     height: number
     orientation: 'portrait' | 'landscape' | 'square'

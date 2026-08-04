@@ -3,7 +3,7 @@ import { resolve, relative, extname } from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const ASSETS_DIR = resolve(process.cwd(), 'public', 'media')
+const ASSETS_DIR = resolve(process.cwd(), 'Assets')
 const MEDIA_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif', '.mp4', '.webm'])
 const EXCLUDED_FILES = new Set(['ED Emmanuelle Doppia Logo Blanc.png'])
 const VIRTUAL_ID = 'virtual:gallery-assets'
@@ -120,25 +120,18 @@ function galleryAssetsPlugin(): Plugin {
           const extension = extname(file).toLowerCase()
           const type = ['.mp4', '.webm'].includes(extension) ? 'video' : 'image'
           const dimensions = ['.jpg', '.jpeg'].includes(extension) ? readJpegInfo(file) : { width: 0, height: 0, orientation: 'landscape' as const }
-          const title = path
-            .slice(0, -extension.length)
-            .split('/')
-            .at(-1)!
-            .replace(/^\d+[-_ ]*/, '')
-            .replaceAll(/[-_]+/g, ' ')
           return {
             src: path.split('/').map(encodeURIComponent).join('/'),
             path,
             folder: path.split('/')[0],
             type,
-            title,
             ...dimensions,
           }
         })
       return `export default ${JSON.stringify(files)}.map((item) => ({
         ...item,
-        src: import.meta.env.BASE_URL + 'media/' + item.src,
-        mobileSrc: import.meta.env.BASE_URL + 'media-mobile/' + item.src,
+        src: import.meta.env.BASE_URL + item.src,
+        mobileSrc: import.meta.env.BASE_URL + item.src,
       }))`
     },
     handleHotUpdate({ file, server }) {
@@ -151,7 +144,7 @@ function galleryAssetsPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), galleryAssetsPlugin()],
-  publicDir: 'public',
+  publicDir: 'Assets',
   base: './',
   build: { target: 'es2022' },
 })

@@ -1,10 +1,8 @@
 node_modules/
 dist/
 tmp/
-Assets/
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
 .DS_Store
 Thumbs.db
-
