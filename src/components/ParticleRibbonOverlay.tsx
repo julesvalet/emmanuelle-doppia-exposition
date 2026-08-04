@@ -12,10 +12,12 @@ type RibbonParticle = {
   side: number
   along: number
   distance: number
+  cornerReach: number
   phase: number
   drift: number
   size: number
   alpha: number
+  alphaBand: 0 | 1 | 2
   color: number
   dispersedX: number
   dispersedY: number
@@ -24,6 +26,7 @@ type RibbonParticle = {
   vx: number
   vy: number
   behind: boolean
+  edgeOverlap: boolean
   towardText: boolean
 }
 
@@ -108,6 +111,9 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
     const compactQuery = matchMedia('(max-width: 760px)')
     const finePointer = matchMedia('(pointer: fine)').matches
     const particles: RibbonParticle[] = []
+    const drawGroups = Array.from({ length: 3 }, () => (
+      Array.from({ length: 24 }, () => [] as RibbonParticle[])
+    ))
     const pointer = { x: -10_000, y: -10_000, active: false }
     let palette = ['rgb(22 18 24)', 'rgb(67 49 75)', 'rgb(112 72 82)', 'rgb(172 103 59)', 'rgb(226 151 70)', 'rgb(246 199 119)', 'rgb(194 166 151)', 'rgb(238 218 181)']
     let photo: Bounds = { x: 0, y: 0, width: 1, height: 1 }
@@ -150,22 +156,44 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
     const seedParticles = () => {
       particles.length = 0
       const compact = compactQuery.matches
-      const count = compact ? Math.min(280, Math.round(width * .65)) : Math.min(1200, Math.round(width * .62))
+      const count = compact
+        ? Math.min(560, Math.max(360, Math.round(width * 1.15)))
+        : Math.min(2800, Math.round(width * 1.4))
+      const cornerParticleCount = Math.round(count * .18)
+      const clusterCenters = [.08, .22, .43, .67, .86]
 
       for (let index = 0; index < count; index += 1) {
         const roll = Math.random()
-        const layer: ParticleLayer = roll < .15 ? 0 : roll < .93 ? 1 : 2
+        const layer: ParticleLayer = roll < .18 ? 0 : roll < .88 ? 1 : 2
+        const cornerSeed = index < cornerParticleCount
+        const cornerSlot = index % 8
+        const side = cornerSeed ? Math.floor(cornerSlot / 2) : Math.floor(Math.random() * 4)
+        let along: number
+
+        if (cornerSeed) {
+          const cornerOffset = Math.pow(Math.random(), 1.65) * .13
+          along = cornerSlot % 2 === 0 ? cornerOffset : 1 - cornerOffset
+        } else if (Math.random() < .48) {
+          const center = clusterCenters[Math.floor(Math.random() * clusterCenters.length)]
+          along = clamp(center + (Math.random() + Math.random() - 1) * .105, 0, 1)
+        } else {
+          along = Math.random()
+        }
+
         const dispersedX = Math.random() * width
         const dispersedY = height * (.15 + Math.random() * .72)
+        const alpha = .2 + Math.random() * .52
         particles.push({
           layer,
-          side: Math.floor(Math.random() * 4),
-          along: Math.random(),
-          distance: Math.random(),
+          side,
+          along,
+          distance: Math.pow(Math.random(), 2.45),
+          cornerReach: Math.random(),
           phase: Math.random() * TAU,
           drift: .22 + Math.random() * .42,
-          size: compact ? .55 + Math.random() * 1.05 : .65 + Math.random() * 1.5,
-          alpha: .2 + Math.random() * .52,
+          size: compact ? .55 + Math.random() * 1.02 : .62 + Math.random() * 1.48,
+          alpha,
+          alphaBand: alpha < .36 ? 0 : alpha < .55 ? 1 : 2,
           color: Math.floor(Math.random() * 8),
           dispersedX,
           dispersedY,
@@ -173,8 +201,9 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
           y: dispersedY,
           vx: 0,
           vy: 0,
-          behind: layer === 0 && Math.random() < .62,
-          towardText: layer === 1 && Math.random() < .075,
+          behind: layer === 0 && Math.random() < .38,
+          edgeOverlap: layer === 2 && Math.random() < .62,
+          towardText: layer === 1 && Math.random() < .014,
         })
       }
     }
@@ -198,46 +227,60 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
 
     const targetFor = (particle: RibbonParticle, elapsed: number) => {
       const compact = compactQuery.matches
-      const margin = compact ? 18 : 34
-      const spread = particle.layer === 0 ? 110 : particle.layer === 1 ? 78 : 34
-      const distance = margin + particle.distance * spread
+      const margin = compact ? 1.5 : 2.5
+      const spread = compact
+        ? particle.layer === 0 ? 42 : particle.layer === 1 ? 32 : 18
+        : particle.layer === 0 ? 58 : particle.layer === 1 ? 44 : 23
+      const distance = particle.behind
+        ? -(2 + particle.distance * (compact ? 9 : 14))
+        : particle.edgeOverlap
+          ? -(1.25 + particle.distance * (compact ? 4 : 6.5))
+          : margin + particle.distance * spread
       let x = photo.x
       let y = photo.y
       let normalX = 0
       let normalY = 0
+      let tangentX = 0
+      let tangentY = 0
 
       if (particle.side === 0) {
         x += particle.along * photo.width
         normalY = -1
+        tangentX = 1
       } else if (particle.side === 1) {
         x += photo.width
         y += particle.along * photo.height
         normalX = 1
+        tangentY = 1
       } else if (particle.side === 2) {
         x += particle.along * photo.width
         y += photo.height
         normalY = 1
+        tangentX = 1
       } else {
         y += particle.along * photo.height
         normalX = -1
+        tangentY = 1
       }
 
-      if (particle.behind) {
-        x = photo.x + photo.width * (.08 + particle.along * .84)
-        y = photo.y + photo.height * (.08 + particle.distance * .84)
-      } else {
-        x += normalX * distance
-        y += normalY * distance
-      }
+      x += normalX * distance
+      y += normalY * distance
+
+      const nearestCorner = Math.min(particle.along, 1 - particle.along)
+      const cornerInfluence = clamp(1 - nearestCorner / .16, 0, 1)
+      const cornerDirection = particle.along < .5 ? -1 : 1
+      const cornerOffset = cornerInfluence * (3 + particle.cornerReach * (compact ? 20 : 36))
+      x += tangentX * cornerDirection * cornerOffset
+      y += tangentY * cornerDirection * cornerOffset
 
       const breath = Math.sin(elapsed * particle.drift + particle.phase)
       const cross = Math.cos(elapsed * (particle.drift * .72) + particle.phase)
-      x += breath * (particle.layer === 0 ? 18 : particle.layer === 1 ? 11 : 6)
-      y += cross * (particle.layer === 0 ? 14 : particle.layer === 1 ? 8 : 4)
+      x += breath * (particle.layer === 0 ? 10 : particle.layer === 1 ? 6.5 : 3)
+      y += cross * (particle.layer === 0 ? 8 : particle.layer === 1 ? 5 : 2.5)
 
       if (particle.towardText && !compact) {
-        x = mix(x, photo.x + photo.width + (width - photo.x - photo.width) * (.25 + particle.distance * .28), .68)
-        y = mix(y, photo.y + photo.height * (.18 + particle.along * .64), .52)
+        x = mix(x, photo.x + photo.width + (width - photo.x - photo.width) * (.08 + particle.distance * .12), .24)
+        y = mix(y, photo.y + photo.height * (.18 + particle.along * .64), .18)
       }
 
       return {
@@ -298,6 +341,10 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
       }
 
       clear()
+      for (const layerGroups of drawGroups) {
+        for (const group of layerGroups) group.length = 0
+      }
+
       for (const particle of particles) {
         const target = targetFor(particle, elapsed)
         particle.vx += (target.x - particle.x) * .014 * delta
@@ -322,14 +369,32 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
         particle.x += particle.vx * delta
         particle.y += particle.vy * delta
 
-        const context = contexts[particle.layer]
+        drawGroups[particle.layer][particle.color * 3 + particle.alphaBand].push(particle)
+      }
+
+      const revealAlpha = .28 + reveal * .72
+      const alphaLevels = [.28, .46, .66]
+      for (let layer = 0; layer < drawGroups.length; layer += 1) {
+        const context = contexts[layer]
         if (!context) continue
-        const edgeFade = particle.layer === 2 ? .78 : 1
-        context.globalAlpha = particle.alpha * (.28 + reveal * .72) * edgeFade
-        context.fillStyle = palette[particle.color % palette.length]
-        context.beginPath()
-        context.arc(particle.x, particle.y, particle.size * (particle.layer === 0 ? 1.45 : 1), 0, TAU)
-        context.fill()
+        const edgeFade = layer === 2 ? .78 : 1
+
+        for (let color = 0; color < palette.length; color += 1) {
+          context.fillStyle = palette[color]
+          for (let alphaBand = 0; alphaBand < alphaLevels.length; alphaBand += 1) {
+            const group = drawGroups[layer][color * 3 + alphaBand]
+            if (!group.length) continue
+
+            context.globalAlpha = alphaLevels[alphaBand] * revealAlpha * edgeFade
+            context.beginPath()
+            for (const particle of group) {
+              const radius = particle.size * (layer === 0 ? 1.45 : 1)
+              context.moveTo(particle.x + radius, particle.y)
+              context.arc(particle.x, particle.y, radius, 0, TAU)
+            }
+            context.fill()
+          }
+        }
       }
       for (const context of contexts) if (context) context.globalAlpha = 1
 
