@@ -68,6 +68,10 @@ export function ParticleCamera() {
     let previousTime = performance.now()
     const startedAt = previousTime
     let scrollVisibility = 1
+    let heroEdge = Number.POSITIVE_INFINITY
+    let burstArmed = false
+    let exitAt = 0
+    let exitDone = false
     let running = false
     let pointerX = -10_000
     let pointerY = -10_000
@@ -119,6 +123,19 @@ export function ParticleCamera() {
       frame = requestAnimationFrame(draw)
     }
 
+    const burst = () => {
+      if (reducedMotion) return
+      const current = layout()
+      for (const particle of particles) {
+        const dx = particle.x - current.cx
+        const dy = particle.y - current.cy
+        const distance = Math.hypot(dx, dy) || 1
+        const speed = (3.5 + Math.random() * 4.5) * (compact ? 0.6 : 1)
+        particle.vx += dx / distance * speed
+        particle.vy += dy / distance * speed
+      }
+    }
+
     const updateVisibility = () => {
       const rect = hero?.getBoundingClientRect()
       if (!rect) return
@@ -127,10 +144,33 @@ export function ParticleCamera() {
       // Keep the effect fully hidden while any part of the poster is still on screen, then
       // ramp it in smoothly as the poster's bottom edge clears the top of the viewport —
       // avoids an abrupt pop right as the poster scrolls away.
+      // Short ramp: the hero is exactly one viewport tall, so every pixel spent fading in
+      // is one less at full opacity before the preamble reaches the cloud.
       const posterRect = poster?.getBoundingClientRect()
-      const posterClearance = posterRect ? clamp01(-posterRect.bottom / fadeDistance) : 1
+      const posterClearance = posterRect ? clamp01(-posterRect.bottom / 60) : 1
       scrollVisibility = Math.min(heroVisibility, posterClearance)
-      if (scrollVisibility > 0.001) start()
+
+      // The light preamble section starts exactly at the hero's bottom edge, so that edge
+      // is where painting must stop — masked per particle in draw() rather than clipped,
+      // so the cloud dissolves at the seam instead of being cut by a straight line.
+      heroEdge = rect.bottom
+
+      // Disperse as the preamble starts eating into the cloud, while the particles are
+      // still fully visible — waiting for scrollVisibility to drop would fire the burst
+      // long after the mask had already hidden everything.
+      const { cy, scale } = layout()
+      const trigger = cy + scale * 0.7 + 20
+      if (rect.bottom > trigger + 60) {
+        burstArmed = true
+        exitAt = 0
+        exitDone = false
+      } else if (burstArmed && rect.bottom <= trigger) {
+        burstArmed = false
+        exitAt = performance.now()
+        burst()
+      }
+
+      if (scrollVisibility > 0.001 && !exitDone) start()
       else context.clearRect(0, 0, width, height)
     }
 
@@ -152,7 +192,11 @@ export function ParticleCamera() {
       previousTime = time
       const elapsed = (time - startedAt) * 0.001
       const formation = reducedMotion ? 1 : clamp01(elapsed / 1.75)
-      const visibility = (reducedMotion ? 1 : clamp01(elapsed / 0.55)) * scrollVisibility
+      // Time-driven so the dispersion always plays out, even when a fast scroll
+      // drops scrollVisibility to 0 in a single step.
+      const exitFade = exitAt ? clamp01(1 - (time - exitAt) / 620) : 1
+      if (exitAt && exitFade <= 0.001) exitDone = true
+      const visibility = (reducedMotion ? 1 : clamp01(elapsed / 0.55)) * scrollVisibility * exitFade
       const current = layout()
       const rotationY = reducedMotion ? 0 : Math.sin(elapsed * 0.42) * 0.075
       const rotationX = reducedMotion ? 0 : Math.cos(elapsed * 0.31) * 0.025
@@ -178,7 +222,9 @@ export function ParticleCamera() {
         const targetY = current.cy
           + rotatedY * current.scale * perspective
           + idleY
-        const spring = 0.008 + formation * 0.017
+        // Relax the pull back to formation during the exit, otherwise the spring
+        // cancels the outward impulse and the cloud just dims in place.
+        const spring = (0.008 + formation * 0.017) * exitFade * exitFade
 
         particle.vx += (targetX - particle.x) * spring * delta
         particle.vy += (targetY - particle.y) * spring * delta
@@ -202,15 +248,16 @@ export function ParticleCamera() {
         particle.x += particle.vx * delta
         particle.y += particle.vy * delta
 
-        context.globalAlpha = visibility * particle.alpha
-        context.fillStyle = '#eeece6'
+        const edgeMask = clamp01((heroEdge - particle.y) / 70)
+        context.globalAlpha = visibility * particle.alpha * edgeMask
+        context.fillStyle = '#ffffff'
         context.beginPath()
         context.arc(particle.x, particle.y, particle.size * Math.max(0.62, perspective), 0, TAU)
         context.fill()
       }
 
       context.globalAlpha = 1
-      if (scrollVisibility > 0.001) frame = requestAnimationFrame(draw)
+      if (scrollVisibility > 0.001 && !exitDone) frame = requestAnimationFrame(draw)
       else {
         running = false
         context.clearRect(0, 0, width, height)
