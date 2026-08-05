@@ -137,7 +137,7 @@ button { font: inherit; }
 .particle-ribbon-overlay--middle { z-index: 3; opacity: .88; }
 .particle-ribbon-overlay--front { z-index: 4; opacity: .78; filter: drop-shadow(0 0 .22rem rgb(var(--photo-bloom-rgb) / .15)); }
 .intro__copy { display: flex; flex-direction: column; }
-.intro__lead p { max-width: 38rem; margin: 0 0 1.35em; font-size: clamp(1rem, .6rem + .85vw, 1.3rem); line-height: 1.75; text-wrap: pretty; }
+.intro__lead p { max-width: 23rem; margin: 0 0 1.35em; font-size: clamp(1rem, .6rem + .85vw, 1.3rem); line-height: 1.75; text-wrap: pretty; }
 .intro__lead p:last-child { margin-bottom: 0; }
 .intro__lead strong { font-weight: 600; }
 .intro__aside { display: flex; flex-direction: column; gap: .3rem; margin-top: 3.5rem; font-size: .67rem; letter-spacing: .08em; text-transform: uppercase; }
