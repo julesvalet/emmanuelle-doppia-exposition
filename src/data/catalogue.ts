@@ -6,7 +6,27 @@ export type CatalogueLocationId =
   | 'kangaroo-island'
   | 'uluru-kata-tjuta'
 
-export type CatalogueEntry = {
+export type LocalizedText = {
+  fr: string
+  en: string
+}
+
+export type FinishOption = {
+  id: 'without-support' | 'with-support'
+  label: LocalizedText
+  price: number
+}
+
+export type PrintFormat = {
+  id: string
+  label: string
+  widthCm: number
+  heightCm: number
+  options: FinishOption[]
+  note?: LocalizedText
+}
+
+type CatalogueEntryBase = {
   number: number
   file: string
   title: string
@@ -15,10 +35,93 @@ export type CatalogueEntry = {
   descriptionEn?: string
 }
 
+export type CatalogueEntry = CatalogueEntryBase & {
+  formats: PrintFormat[]
+  preorderStatus: 'coming-soon' | 'available'
+}
+
+const finishLabels = {
+  withoutSupport: { fr: 'Sans support', en: 'Print only' },
+  withSupport: { fr: 'Avec support', en: 'With support' },
+} as const
+
+const createStandardFormats = (): PrintFormat[] => [
+  {
+    id: '20x30',
+    label: '20 × 30 cm',
+    widthCm: 20,
+    heightCm: 30,
+    options: [
+      { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 12 },
+      { id: 'with-support', label: { ...finishLabels.withSupport }, price: 30 },
+    ],
+  },
+  {
+    id: '30x45',
+    label: '30 × 45 cm',
+    widthCm: 30,
+    heightCm: 45,
+    options: [
+      { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 20 },
+      { id: 'with-support', label: { ...finishLabels.withSupport }, price: 40 },
+    ],
+  },
+]
+
+const createFormatsForArtwork = (number: number): PrintFormat[] => {
+  if (number === 16) {
+    return [{
+      id: '42x59-4',
+      label: '42 × 59,4 cm',
+      widthCm: 42,
+      heightCm: 59.4,
+      options: [
+        { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 25 },
+        { id: 'with-support', label: { ...finishLabels.withSupport }, price: 45 },
+      ],
+    }]
+  }
+
+  if (number === 32) {
+    return [{
+      id: '60x90',
+      label: '60 × 90 cm',
+      widthCm: 60,
+      heightCm: 90,
+      note: {
+        fr: 'Tirage disponible uniquement dans ce format.',
+        en: 'Print available exclusively in this size.',
+      },
+      options: [
+        { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 50 },
+        { id: 'with-support', label: { ...finishLabels.withSupport }, price: 70 },
+      ],
+    }]
+  }
+
+  if (number === 40) {
+    return [{
+      id: '45x60',
+      label: '45 × 60 cm',
+      widthCm: 45,
+      heightCm: 60,
+      note: {
+        fr: 'Photo non exposée mais possibilité de commande.',
+        en: 'Photograph not exhibited, but available to order.',
+      },
+      options: [
+        { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 25 },
+      ],
+    }]
+  }
+
+  return createStandardFormats()
+}
+
 // Source de vérité unique du site : ordre, correspondance HD et titres en gras
 // du catalogue officiel. Les n°10, 20 et 43 appartiennent au même cartouche
 // de titre que la photographie qui les précède dans le PDF.
-export const catalogue: CatalogueEntry[] = [
+const catalogueEntries: CatalogueEntryBase[] = [
   {
     number: 1, file: 'Uluru-Kata Tjuta/Uluru -8.jpg', title: 'Ayers Rock-Uluru View', location: 'uluru-kata-tjuta',
     descriptionEn: 'Ayers Rock-Uluru View / Red Center / Australian Outback\nNorthern Territory',
@@ -263,3 +366,9 @@ export const catalogue: CatalogueEntry[] = [
     descriptionFr: 'Quartier Central des Affaires / Sydney / Nouvelle Galles du Sud / Australie',
   },
 ]
+
+export const catalogue: CatalogueEntry[] = catalogueEntries.map((entry) => ({
+  ...entry,
+  formats: createFormatsForArtwork(entry.number),
+  preorderStatus: 'coming-soon',
+}))

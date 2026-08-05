@@ -261,8 +261,27 @@ button { font: inherit; }
 .lightbox__language > span { display: block; margin-bottom: .7rem; color: var(--mineral); font-size: .53rem; letter-spacing: .18em; text-transform: uppercase; }
 .lightbox__language p { max-width: 34rem; margin: 0; font-size: clamp(.9rem, 1vw, 1.08rem); line-height: 1.62; letter-spacing: .005em; white-space: pre-line; }
 .lightbox__language.is-secondary p { color: rgba(238,236,230,.68); }
+.print-configurator { display: grid; gap: clamp(1.25rem, 2.4vh, 2rem); margin-top: auto; padding-top: clamp(1.5rem, 3vh, 2.5rem); border-top: 1px solid rgba(168,181,162,.2); }
+.print-configurator__group { min-width: 0; margin: 0; padding: 0; border: 0; }
+.print-configurator__group legend, .print-configurator__price > span { width: 100%; margin: 0 0 .65rem; padding: 0; color: rgba(168,181,162,.72); font-size: .52rem; font-weight: 400; line-height: 1.2; letter-spacing: .18em; text-transform: uppercase; }
+.print-configurator__options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid rgba(168,181,162,.22); border-bottom: 1px solid rgba(168,181,162,.22); }
+.print-configurator__option { position: relative; display: grid; grid-template-columns: 1rem minmax(0, 1fr); align-items: center; min-height: 2.75rem; gap: .65rem; padding: .65rem .55rem; color: rgba(238,236,230,.58); cursor: pointer; transition: color .25s, background-color .25s; }
+.print-configurator__option + .print-configurator__option { border-left: 1px solid rgba(168,181,162,.18); }
+.print-configurator__option:hover { color: var(--paper); background: rgba(168,181,162,.04); }
+.print-configurator__option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.print-configurator__option > span { display: grid; width: .72rem; height: .72rem; place-items: center; border: 1px solid rgba(168,181,162,.62); border-radius: 50%; }
+.print-configurator__option > span::after { content: ''; width: .3rem; height: .3rem; border-radius: 50%; background: var(--mineral); opacity: 0; transform: scale(.25); transition: opacity .2s, transform .25s; }
+.print-configurator__option input:checked + span::after { opacity: 1; transform: scale(1); }
+.print-configurator__option:has(input:checked) { color: var(--paper); background: rgba(168,181,162,.07); }
+.print-configurator__option:has(input:focus-visible) { outline: 1px solid var(--mineral); outline-offset: -2px; }
+.print-configurator__option strong, .print-configurator__fixed strong { font-size: .65rem; font-weight: 400; line-height: 1.35; letter-spacing: .075em; text-transform: uppercase; }
+.print-configurator__fixed { display: flex; min-height: 2.75rem; flex-direction: column; justify-content: center; gap: .45rem; padding: .65rem 0; border-top: 1px solid rgba(168,181,162,.22); border-bottom: 1px solid rgba(168,181,162,.22); }
+.print-configurator__fixed small { color: rgba(238,236,230,.52); font-size: .6rem; line-height: 1.45; letter-spacing: .025em; }
+.print-configurator__price { display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
+.print-configurator__price > span { width: auto; margin: 0 0 .2rem; }
+.print-configurator__price strong { font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(1.9rem, 2.4vw, 2.8rem); font-weight: 400; line-height: .9; letter-spacing: -.02em; }
 .lightbox button { border: 0; color: inherit; background: none; font-size: .65rem; letter-spacing: .1em; text-transform: uppercase; }
-.lightbox button.lightbox__preorder { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 3.25rem; gap: 1rem; margin-top: auto; padding: .85rem 1rem; border: 1px solid rgba(168,181,162,.32); color: rgba(238,236,230,.72); background: transparent; opacity: .78; cursor: not-allowed; }
+.lightbox button.lightbox__preorder { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 3.25rem; gap: 1rem; margin-top: clamp(1.25rem, 2.5vh, 2rem); padding: .85rem 1rem; border: 1px solid rgba(168,181,162,.32); color: rgba(238,236,230,.72); background: transparent; opacity: .78; cursor: not-allowed; }
 .lightbox__preorder span { font-size: .63rem; line-height: 1; letter-spacing: .14em; }
 .lightbox__preorder small { color: rgba(168,181,162,.7); font-size: .48rem; font-weight: 400; line-height: 1; letter-spacing: .1em; text-transform: none; }
 .lightbox__controls { position: fixed; z-index: 2; right: 2rem; bottom: 2rem; display: flex; gap: 2rem; }
@@ -380,6 +399,8 @@ button { font: inherit; }
   .lightbox__details h2 { margin-top: 1.5rem; font-size: clamp(2.5rem, 12vw, 4rem); }
   .lightbox__language { margin-top: 2.25rem; }
   .lightbox__language p { font-size: 1rem; line-height: 1.58; }
+  .print-configurator { margin-top: 0; padding-top: 1.75rem; }
+  .print-configurator__option, .print-configurator__fixed { min-height: 44px; }
   .lightbox button.lightbox__preorder { margin-top: 2.5rem; padding-top: .85rem; }
   .lightbox__controls { right: 0; bottom: 0; left: 0; justify-content: space-between; padding: 1.35rem max(1rem, env(safe-area-inset-right, 0px)) max(1rem, env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px)); background: linear-gradient(0deg, rgba(9,10,8,1) 45%, rgba(9,10,8,0)); }
 }

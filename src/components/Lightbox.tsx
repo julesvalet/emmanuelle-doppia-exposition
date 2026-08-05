@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { GalleryItem } from '../data/gallery'
 import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import { useLanguage } from '../i18n'
@@ -16,6 +16,15 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
   const { registerModalClose } = useInterfaceControls()
   const close = useCallback(() => onChange(null), [onChange])
   const isOpen = activeIndex !== null
+  const item = activeIndex === null ? null : items[activeIndex]
+  const [selectedFormatId, setSelectedFormatId] = useState('')
+  const [selectedFinishId, setSelectedFinishId] = useState('')
+
+  useEffect(() => {
+    const firstFormat = item?.formats[0]
+    setSelectedFormatId(firstFormat?.id ?? '')
+    setSelectedFinishId(firstFormat?.options[0]?.id ?? '')
+  }, [item?.id, item?.formats])
 
   useEffect(() => {
     if (!isOpen) return
@@ -26,6 +35,7 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
     if (activeIndex === null) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') close()
+      if (event.target instanceof HTMLInputElement) return
       if (event.key === 'ArrowRight') onChange((activeIndex + 1) % items.length)
       if (event.key === 'ArrowLeft') onChange((activeIndex - 1 + items.length) % items.length)
     }
@@ -35,10 +45,24 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
     }
   }, [activeIndex, close, items.length, onChange])
 
-  if (activeIndex === null) return null
-  const item = items[activeIndex]
+  const currencyFormatter = useMemo(() => new Intl.NumberFormat(language === 'fr' ? 'fr-FR' : 'en-GB', {
+    style: 'currency',
+    currency: 'EUR',
+  }), [language])
+
+  if (activeIndex === null || !item) return null
   const number = String(item.order).padStart(2, '0')
   const description = language === 'fr' ? item.descriptionFr : item.descriptionEn
+  const selectedFormat = item.formats.find((format) => format.id === selectedFormatId) ?? item.formats[0]
+  const selectedFinish = selectedFormat.options.find((option) => option.id === selectedFinishId) ?? selectedFormat.options[0]
+  const note = selectedFormat.note?.[language]
+
+  const selectFormat = (formatId: string) => {
+    const format = item.formats.find((candidate) => candidate.id === formatId)
+    if (!format) return
+    setSelectedFormatId(format.id)
+    setSelectedFinishId(format.options[0].id)
+  }
 
   return (
     <div className="lightbox" role="dialog" aria-modal="true" aria-labelledby="lightbox-title" data-lenis-prevent>
@@ -68,6 +92,63 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
               <p>{description}</p>
             </section>
           )}
+          <section className="print-configurator" aria-label={t.shop.configuration}>
+            <fieldset className="print-configurator__group">
+              <legend>{t.shop.size}</legend>
+              {item.formats.length === 1 ? (
+                <div className="print-configurator__fixed">
+                  <strong>{selectedFormat.label}</strong>
+                  {note && <small>{note}</small>}
+                </div>
+              ) : (
+                <div className="print-configurator__options">
+                  {item.formats.map((format) => (
+                    <label className="print-configurator__option" key={format.id}>
+                      <input
+                        type="radio"
+                        name={`format-${item.id}`}
+                        value={format.id}
+                        checked={selectedFormat.id === format.id}
+                        onChange={() => selectFormat(format.id)}
+                      />
+                      <span aria-hidden="true" />
+                      <strong>{format.label}</strong>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </fieldset>
+
+            <fieldset className="print-configurator__group">
+              <legend>{t.shop.finish}</legend>
+              {selectedFormat.options.length === 1 ? (
+                <div className="print-configurator__fixed">
+                  <strong>{selectedFinish.label[language]}</strong>
+                </div>
+              ) : (
+                <div className="print-configurator__options">
+                  {selectedFormat.options.map((option) => (
+                    <label className="print-configurator__option" key={option.id}>
+                      <input
+                        type="radio"
+                        name={`finish-${item.id}-${selectedFormat.id}`}
+                        value={option.id}
+                        checked={selectedFinish.id === option.id}
+                        onChange={() => setSelectedFinishId(option.id)}
+                      />
+                      <span aria-hidden="true" />
+                      <strong>{option.label[language]}</strong>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </fieldset>
+
+            <div className="print-configurator__price">
+              <span>{t.shop.price}</span>
+              <strong aria-live="polite">{currencyFormatter.format(selectedFinish.price)}</strong>
+            </div>
+          </section>
           <button className="lightbox__preorder" type="button" disabled aria-disabled="true">
             <span>{t.shop.preorder}</span>
             <small>{t.shop.comingSoon}</small>

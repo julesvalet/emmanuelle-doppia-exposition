@@ -1,5 +1,5 @@
 import detectedAssets from 'virtual:gallery-assets'
-import { catalogue } from './catalogue'
+import { catalogue, type PrintFormat } from './catalogue'
 
 export type JourneyArtwork = {
   id: string
@@ -20,6 +20,8 @@ export type JourneyArtwork = {
   year?: string
   descriptionFr?: string
   descriptionEn?: string
+  formats: PrintFormat[]
+  preorderStatus: 'coming-soon' | 'available'
 }
 
 export type JourneyLocation = {
@@ -150,6 +152,8 @@ export const catalogueArtworks: JourneyArtwork[] = catalogue.map<JourneyArtwork>
     orientation: asset.orientation,
     descriptionFr: entry.descriptionFr,
     descriptionEn: entry.descriptionEn,
+    formats: entry.formats,
+    preorderStatus: entry.preorderStatus,
   }
 })
 
