@@ -438,7 +438,12 @@ export function AustraliaEarthZoom() {
         marker.style.opacity = String(point.visible ? reveal : 0)
         const perspectiveScale = 0.82 + clamp01(point.depth) * 0.18
         marker.style.transform = `scale(${(0.72 + reveal * 0.28) * perspectiveScale})`
-        marker.style.pointerEvents = reveal > 0.92 ? 'auto' : 'none'
+        // Hystérésis : activation à .65, relâchement sous .35 seulement. Un seuil unique
+        // recalculé en continu (ancien `reveal > 0.92`) faisait clignoter le hover pendant
+        // que la progression du scroll se stabilisait autour de la frontière.
+        const wasInteractive = marker.style.pointerEvents === 'auto'
+        const interactive = point.visible && reveal > (wasInteractive ? 0.35 : 0.65)
+        marker.style.pointerEvents = interactive ? 'auto' : 'none'
       })
       placeLabels(markerPoints)
     }
