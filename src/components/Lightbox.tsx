@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import type { GalleryItem } from '../data/gallery'
 import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import { useLanguage } from '../i18n'
+import { useInterfaceControls } from '../interfaceControls'
 
 type Props = {
   items: GalleryItem[]
@@ -12,11 +13,19 @@ type Props = {
 export function Lightbox({ items, activeIndex, onChange }: Props) {
   useModalScrollLock(activeIndex !== null)
   const { language, t } = useLanguage()
+  const { registerModalClose } = useInterfaceControls()
+  const close = useCallback(() => onChange(null), [onChange])
+  const isOpen = activeIndex !== null
+
+  useEffect(() => {
+    if (!isOpen) return
+    return registerModalClose(close)
+  }, [close, isOpen, registerModalClose])
 
   useEffect(() => {
     if (activeIndex === null) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onChange(null)
+      if (event.key === 'Escape') close()
       if (event.key === 'ArrowRight') onChange((activeIndex + 1) % items.length)
       if (event.key === 'ArrowLeft') onChange((activeIndex - 1 + items.length) % items.length)
     }
@@ -24,7 +33,7 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
     return () => {
       removeEventListener('keydown', onKeyDown)
     }
-  }, [activeIndex, items.length, onChange])
+  }, [activeIndex, close, items.length, onChange])
 
   if (activeIndex === null) return null
   const item = items[activeIndex]
@@ -33,7 +42,6 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
 
   return (
     <div className="lightbox" role="dialog" aria-modal="true" aria-labelledby="lightbox-title" data-lenis-prevent>
-      <button className="lightbox__close" onClick={() => onChange(null)}>{t.common.close} <span>×</span></button>
       <div className={`lightbox__layout is-${item.orientation}`} key={item.id}>
         <div className="lightbox__media">
           {item.type === 'placeholder' ? (
@@ -60,6 +68,10 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
               <p>{description}</p>
             </section>
           )}
+          <button className="lightbox__preorder" type="button" disabled aria-disabled="true">
+            <span>{t.shop.preorder}</span>
+            <small>{t.shop.comingSoon}</small>
+          </button>
         </aside>
       </div>
       {items.length > 1 && (

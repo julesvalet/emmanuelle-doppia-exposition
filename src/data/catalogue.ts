@@ -87,8 +87,8 @@ export const catalogue: CatalogueEntry[] = [
   },
   {
     number: 15, file: 'Uluru-Kata Tjuta/Uluru- 2.jpg', title: 'Ayers Rock or Uluru', location: 'uluru-kata-tjuta',
-    descriptionEn: 'Ayers Rock or Uluru is a sacred site for the Anangu people, Aboriginal tribe of Australia, who are the ancestral owners of Uluru. Uluru is listed as a UNESCO World Heritage site\nRed Center / Australian Outback / Northern Territory',
-    descriptionFr: "Ayers Rock ou Uluru est un site sacré pour le peuple Anangu, tribu aborigène d'Australie qui sont les propriétaires ancestraux d'Uluru. Uluru est inscrit au patrimoine mondial de l'UNESCO .",
+    descriptionEn: "Ayers Rock, or Uluru, is an iconic monolith in Australia's Red Centre. This remarkable landscape is listed as a UNESCO World Heritage Site.",
+    descriptionFr: "Ayers Rock, ou Uluru, est un monolithe emblématique du Centre Rouge australien. Ce paysage remarquable est inscrit au patrimoine mondial de l'UNESCO.",
   },
   {
     number: 16, file: 'Melbourne/Melbourne -1.JPG', title: 'Royal Botanic Garden', location: 'melbourne',
@@ -183,8 +183,8 @@ export const catalogue: CatalogueEntry[] = [
   },
   {
     number: 35, file: 'Adelaide/Adelaïde -1.jpg', title: 'Paddle steamer', location: 'adelaide',
-    descriptionEn: 'Paddle steamer / Murray River / Adelaïde / South Australia\nBlack & White photography\n\n* For the little story : Paddle steamers are steamships dating from 19th century driven by large paddle wheels, historically essential for river and coastal transport, and continue to serve as cultural and tourist attractions today.',
-    descriptionFr: 'Paddle Steamer / Rivière Murray / Adelaïde / Australie du Sud\nNoir et Blanc photographie\n\n* Pour la petite histoire : les Paddle steamer ("vapeurs à aubes")sont des navires à vapeur datant du 19ème siècle, entraînés par de grandes roues à aubes, historiquement essentiels pour le transport fluvial et côtier, et servent encore comme attractions culturelles et touristiques aujourd’hui.',
+    descriptionEn: 'Paddle steamer / Murray River / Adelaïde / South Australia\nBlack & White photography',
+    descriptionFr: 'Paddle Steamer / Rivière Murray / Adelaïde / Australie du Sud\nNoir et Blanc photographie',
   },
   {
     number: 36, file: 'Adelaide/Adelaîde -2.jpg', title: 'Fishing Hut', location: 'adelaide',

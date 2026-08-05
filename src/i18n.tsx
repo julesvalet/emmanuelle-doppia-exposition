@@ -104,6 +104,7 @@ export const translations = {
       noPhotos: 'Les photographies de cette étape seront bientôt disponibles.',
       details: 'Détails de',
     },
+    shop: { preorder: 'Précommande', comingSoon: 'Bientôt disponible' },
     accessibility: {
       artworkAlt: 'photographie de la série',
       byArtist: 'par Emmanuelle Doppia',
@@ -207,6 +208,7 @@ export const translations = {
       noPhotos: 'The photographs from this stage will be available soon.',
       details: 'Details of',
     },
+    shop: { preorder: 'Pre-order', comingSoon: 'Coming soon' },
     accessibility: {
       artworkAlt: 'photograph from the series',
       byArtist: 'by Emmanuelle Doppia',

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { site } from '../data/site'
 import { useLanguage } from '../i18n'
+import { useInterfaceControls } from '../interfaceControls'
 import { Logo } from './Logo'
 
 export function Header() {
   const [open, setOpen] = useState(false)
   const { t, toggleLanguage } = useLanguage()
+  const { modalClose } = useInterfaceControls()
 
   useEffect(() => {
     const close = () => setOpen(false)
@@ -14,12 +15,21 @@ export function Header() {
     return () => removeEventListener('resize', close)
   }, [])
 
+  useEffect(() => {
+    if (modalClose) setOpen(false)
+  }, [modalClose])
+
+  const toggleMenu = () => {
+    if (!open && modalClose) modalClose()
+    setOpen((value) => !value)
+  }
+
   return (
-    <>
-      <header className={`header ${open ? 'is-open' : ''}`}>
-        <a className="header__brand" href="#ouverture" aria-label={t.header.backToOpening}>
-          <Logo compact />
-        </a>
+    <header className={`header ${open ? 'is-open' : ''} ${modalClose ? 'is-lightbox' : ''}`}>
+      <a className="header__brand" href="#ouverture" aria-label={t.header.backToOpening}>
+        <Logo compact />
+      </a>
+      <div className="header__controls">
         <button
           className="menu-toggle"
           type="button"
@@ -27,23 +37,11 @@ export function Header() {
           aria-expanded={open}
           aria-controls="main-navigation"
           data-cursor={open ? t.common.close : t.common.open}
-          onClick={() => setOpen((value) => !value)}
+          onClick={toggleMenu}
         >
           <span>{open ? t.common.close : t.common.menu}</span>
           <i aria-hidden="true" />
         </button>
-        <nav id="main-navigation" className="nav" aria-label={t.header.navigation}>
-          <ol>
-            {site.navigation.map((item, index) => (
-              <li key={item.href}>
-                <span>0{index + 1}</span>
-                <a href={item.href} data-cursor={t.common.go} onClick={() => setOpen(false)}>{t.header.navigationItems[index]}</a>
-              </li>
-            ))}
-          </ol>
-        </nav>
-      </header>
-      {createPortal((
         <button
           className="language-toggle"
           type="button"
@@ -53,7 +51,23 @@ export function Header() {
         >
           <span>{t.languageCode}</span>
         </button>
-      ), document.body)}
-    </>
+        {modalClose && (
+          <button className="header__modal-close" type="button" onClick={modalClose} aria-label={t.common.close}>
+            <span>{t.common.close}</span>
+            <i aria-hidden="true">×</i>
+          </button>
+        )}
+      </div>
+      <nav id="main-navigation" className="nav" aria-label={t.header.navigation}>
+        <ol>
+          {site.navigation.map((item, index) => (
+            <li key={item.href}>
+              <span>0{index + 1}</span>
+              <a href={item.href} data-cursor={t.common.go} onClick={() => setOpen(false)}>{t.header.navigationItems[index]}</a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    </header>
   )
 }
