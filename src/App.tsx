@@ -2,10 +2,9 @@ import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
-import { artist } from './data/artist'
-import { contact } from './data/contact'
 import { site } from './data/site'
 import { catalogueArtworks } from './data/journey'
+import { useLanguage } from './i18n'
 import { Cursor } from './components/Cursor'
 import { Gallery } from './components/Gallery'
 import { Header } from './components/Header'
@@ -24,6 +23,7 @@ function App() {
   const app = useRef<HTMLDivElement>(null)
   const chapter = useRef<HTMLSpanElement>(null)
   const introImage = useRef<HTMLImageElement>(null)
+  const { t } = useLanguage()
 
   useEffect(() => {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
@@ -103,17 +103,17 @@ function App() {
       <Header />
       <main id="main">
         <section className="hero" id="ouverture" aria-labelledby="hero-title" data-chapter>
-          <div className="hero__meta"><span>{site.exhibition}</span><span>Édition {site.year}</span></div>
+          <div className="hero__meta"><span>{t.hero.exhibition}</span><span>{t.hero.edition} {site.year}</span></div>
           <h1 className="hero__title--exhibition" id="hero-title">
-            <span className="hero__line"><span>De l’Opéra</span></span>
-            <span className="hero__line hero__line--offset"><span><em>à l’Ocre</em></span></span>
+            <span className="hero__line"><span>{t.hero.titleFirst}</span></span>
+            <span className="hero__line hero__line--offset"><span><em>{t.hero.titleSecond}</em></span></span>
           </h1>
-          <div className="hero__mark"><span>Faire défiler</span><i /></div>
+          <div className="hero__mark"><span>{t.hero.scroll}</span><i /></div>
         </section>
 
         <section className="intro editorial-section" aria-labelledby="intro-title">
           <div className="editorial-text-layer">
-            <div className="section-kicker reveal"><span>01</span><span>Préambule</span><span>Le regard</span></div>
+            <div className="section-kicker reveal"><span>01</span><span>{t.intro.preamble}</span><span>{t.intro.gaze}</span></div>
             {introArtwork && (
               <figure className="intro__artwork" aria-label={introArtwork.title}>
                 <span className="intro__artwork-frame">
@@ -122,7 +122,7 @@ function App() {
                     <img
                       ref={introImage}
                       src={introArtwork.src}
-                      alt={introArtwork.alt}
+                      alt={`${introArtwork.title}, ${t.accessibility.artworkAlt} Uluru–Kata Tjuta ${t.accessibility.byArtist}.`}
                       width={introArtwork.width || undefined}
                       height={introArtwork.height || undefined}
                       loading="lazy"
@@ -132,37 +132,37 @@ function App() {
                 </span>
               </figure>
             )}
-            <p className="intro__lead editorial-text reveal" id="intro-title">{artist.statement}</p>
-            <div className="intro__aside reveal"><span>Une exposition de</span><strong>{artist.name}</strong></div>
+            <p className="intro__lead editorial-text reveal" id="intro-title">{t.intro.statement}</p>
+            <div className="intro__aside reveal"><span>{t.intro.exhibitionBy}</span><strong>{site.artist}</strong></div>
           </div>
           <ParticleRibbonOverlay enabled={EDITORIAL_PARTICLE_RIBBON_ENABLED} imageRef={introImage} />
         </section>
 
-        <div className="marquee" aria-hidden="true"><div className="marquee__track">Présence — lumière — silence — mouvement — présence — lumière — silence — mouvement —</div></div>
+        <div className="marquee" aria-hidden="true"><div className="marquee__track">{t.intro.marquee}</div></div>
 
         <AustraliaEarthZoom />
 
         <div data-chapter><Gallery /></div>
 
         <section className="about" id="demarche" aria-labelledby="about-title" data-chapter>
-          <div className="section-kicker reveal"><span>04</span><span>Démarche</span><span>À propos</span></div>
+          <div className="section-kicker reveal"><span>04</span><span>{t.about.approach}</span><span>{t.about.about}</span></div>
           <div className="about__layout">
-            <h2 className="reveal" id="about-title">Regarder,<br /><em>vraiment.</em></h2>
-            <div className="about__copy reveal"><p>{artist.about}</p><span>Emmanuelle Doppia<br />Photographe</span></div>
+            <h2 className="reveal" id="about-title">{t.about.titleFirst}<br /><em>{t.about.titleSecond}</em></h2>
+            <div className="about__copy reveal"><p>{t.about.text}</p><span>{site.artist}<br />{t.about.photographer}</span></div>
           </div>
           <div className="about__symbol" aria-hidden="true"><Logo /></div>
         </section>
 
         <section className="contact" id="contact" aria-labelledby="contact-title" data-chapter>
           <div className="section-kicker reveal"><span>05</span><span>Contact</span><span>{site.location}</span></div>
-          <h2 className="reveal" id="contact-title">{contact.heading.split(' ')[0]}<br /><em>{contact.heading.split(' ').slice(1).join(' ')}</em></h2>
-          <p className="reveal">{contact.note}</p>
+          <h2 className="reveal" id="contact-title">{t.contact.headingFirst}<br /><em>{t.contact.headingSecond}</em></h2>
+          <p className="reveal">{t.contact.note}</p>
         </section>
       </main>
       <footer className="footer">
         <Logo compact />
         <span>© {site.year} {site.artist}</span>
-        <a href="#ouverture" data-cursor="Haut">Retour en haut ↑</a>
+        <a href="#ouverture" data-cursor={t.footer.cursorTop}>{t.footer.backToTop}</a>
       </footer>
     </div>
   )

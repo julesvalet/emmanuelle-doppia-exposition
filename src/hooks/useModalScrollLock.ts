@@ -25,6 +25,7 @@ export function useModalScrollLock(locked: boolean) {
       lockedScrollY = window.scrollY
       previousBodyOverflow = document.body.style.overflow
       notifyScrollLock(true)
+      document.documentElement.classList.add('emdp-modal-open')
       document.body.style.overflow = 'hidden'
     }
     lockCount += 1
@@ -34,6 +35,7 @@ export function useModalScrollLock(locked: boolean) {
       if (lockCount !== 0) return
 
       document.body.style.overflow = previousBodyOverflow
+      document.documentElement.classList.remove('emdp-modal-open')
       window.scrollTo(0, lockedScrollY)
       notifyScrollLock(false)
     }

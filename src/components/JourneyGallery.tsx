@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { catalogueArtworkCount, type JourneyLocation } from '../data/journey'
+import { useLanguage } from '../i18n'
 
 type Props = {
   location: JourneyLocation
@@ -15,6 +16,9 @@ export function JourneyGallery({ location, onClose }: Props) {
   const closeButton = useRef<HTMLButtonElement>(null)
   const artworks = location.artworks
   const activeArtwork = activeIndex === null ? null : artworks[activeIndex]
+  const { t } = useLanguage()
+  const locationCopy = t.earth.locations[location.id as keyof typeof t.earth.locations]
+  const photographCount = (count: number) => `${formatCounter(count)} ${count > 1 ? t.common.photographs : t.common.photograph}`
 
   useEffect(() => {
     setActiveIndex(null)
@@ -63,22 +67,22 @@ export function JourneyGallery({ location, onClose }: Props) {
       <section className="journey-viewer" role="dialog" aria-modal="true" aria-labelledby="journey-viewer-title">
         <header>
           <div>
-            <span>Étape {location.label} · {location.region}</span>
+            <span>{t.earth.step} {location.label} · {locationCopy.region}</span>
             <h3 id="journey-viewer-title">{location.name}</h3>
           </div>
           <div className="journey-viewer__header-actions">
             <span aria-live="polite">
               {activeIndex === null
-                ? `${formatCounter(artworks.length)} photographie${artworks.length > 1 ? 's' : ''}`
+                ? photographCount(artworks.length)
                 : `${formatCounter(activeArtwork?.order ?? 0)} / ${formatCounter(catalogueArtworkCount)}`}
             </span>
             {activeIndex !== null && (
-              <button type="button" onClick={() => setActiveIndex(null)} aria-label="Revenir à la galerie">
-                Galerie
+              <button type="button" onClick={() => setActiveIndex(null)} aria-label={t.viewer.backToGallery}>
+                {t.common.gallery}
               </button>
             )}
-            <button ref={closeButton} type="button" onClick={onClose} aria-label={`Fermer la série ${location.name}`}>
-              Fermer <i aria-hidden="true">×</i>
+            <button ref={closeButton} type="button" onClick={onClose} aria-label={`${t.viewer.closeSeries} ${location.name}`}>
+              {t.common.close} <i aria-hidden="true">×</i>
             </button>
           </div>
         </header>
@@ -99,12 +103,12 @@ export function JourneyGallery({ location, onClose }: Props) {
             <figure key={activeArtwork.id} className="journey-viewer__figure">
               {activeArtwork.type === 'placeholder' ? (
                 <div className="journey-viewer__error journey-viewer__placeholder" role="status">
-                  <small>N° {formatCounter(activeArtwork.order)}</small>
-                  <span>Original haute définition à ajouter</span>
+                  <small>{t.common.number} {formatCounter(activeArtwork.order)}</small>
+                  <span>{t.common.originalMissing}</span>
                 </div>
               ) : failedIndexes.has(activeIndex) ? (
                 <div className="journey-viewer__error" role="status">
-                  <span>Photographie indisponible</span>
+                  <span>{t.common.unavailable}</span>
                   <small>{formatCounter(activeArtwork.order)} · {location.name}</small>
                 </div>
               ) : (
@@ -112,7 +116,7 @@ export function JourneyGallery({ location, onClose }: Props) {
                   <source media="(max-width: 760px)" srcSet={activeArtwork.mobileSrc} />
                   <img
                     src={activeArtwork.src}
-                    alt={activeArtwork.alt}
+                    alt={`${activeArtwork.title}, ${t.accessibility.artworkAlt} ${location.name} ${t.accessibility.byArtist}.`}
                     width={activeArtwork.width || undefined}
                     height={activeArtwork.height || undefined}
                     loading="eager"
@@ -128,32 +132,32 @@ export function JourneyGallery({ location, onClose }: Props) {
             </figure>
           </div>
         ) : artworks.length ? (
-          <div className="journey-photo-grid" aria-label={`Photographies de ${location.name}`}>
+          <div className="journey-photo-grid" aria-label={`${t.viewer.photoList} ${location.name}`}>
             {artworks.map((artwork, index) => (
               <button
                 className="journey-photo-card"
                 key={artwork.id}
                 type="button"
-                data-cursor="Voir"
+                data-cursor={t.common.view}
                 onClick={() => setActiveIndex(index)}
                 aria-label={artwork.type === 'placeholder'
-                  ? `Photographie ${artwork.order}, original haute définition manquant`
-                  : `Ouvrir ${artwork.title}`}
+                  ? `${t.common.photograph} ${artwork.order}, ${t.common.originalMissing}`
+                  : `${t.common.open} ${artwork.title}`}
               >
                 <span className="journey-photo-card__media">
                   {artwork.type === 'placeholder' ? (
                     <span className="journey-photo-card__error">
-                      <small>N° {formatCounter(artwork.order)}</small>
-                      <strong>Original haute définition à ajouter</strong>
+                      <small>{t.common.number} {formatCounter(artwork.order)}</small>
+                      <strong>{t.common.originalMissing}</strong>
                     </span>
                   ) : failedIndexes.has(index) ? (
-                    <span className="journey-photo-card__error" role="status">Photographie indisponible</span>
+                    <span className="journey-photo-card__error" role="status">{t.common.unavailable}</span>
                   ) : (
                     <picture>
                       <source media="(max-width: 760px)" srcSet={artwork.mobileSrc} />
                       <img
                         src={artwork.src}
-                        alt={artwork.alt}
+                        alt={`${artwork.title}, ${t.accessibility.artworkAlt} ${location.name} ${t.accessibility.byArtist}.`}
                         width={artwork.width || undefined}
                         height={artwork.height || undefined}
                         loading="lazy"
@@ -172,19 +176,19 @@ export function JourneyGallery({ location, onClose }: Props) {
           </div>
         ) : (
           <div className="journey-viewer__empty">
-            <p>Les photographies de cette étape seront bientôt disponibles.</p>
+            <p>{t.viewer.noPhotos}</p>
           </div>
         )}
 
         <footer>
           <span>{location.coordinates.lat.toFixed(4)}, {location.coordinates.lng.toFixed(4)}</span>
           {activeIndex !== null && artworks.length > 1 && (
-            <nav aria-label={`Parcourir la série ${location.name}`}>
-              <button type="button" onClick={previous}>← Précédente</button>
-              <button type="button" onClick={next}>Suivante →</button>
+            <nav aria-label={`${t.viewer.browseSeries} ${location.name}`}>
+              <button type="button" onClick={previous}>← {t.common.previous}</button>
+              <button type="button" onClick={next}>{t.common.next} →</button>
             </nav>
           )}
-          <span>{activeIndex === null ? 'Sélectionner une photographie' : `${formatCounter(activeArtwork?.order ?? 0)} / ${formatCounter(catalogueArtworkCount)}`}</span>
+          <span>{activeIndex === null ? t.viewer.selectPhoto : `${formatCounter(activeArtwork?.order ?? 0)} / ${formatCounter(catalogueArtworkCount)}`}</span>
         </footer>
       </section>
     </div>

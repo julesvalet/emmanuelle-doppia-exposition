@@ -45,9 +45,12 @@ button { font: inherit; }
 .header { position: fixed; z-index: 100; top: 0; right: 0; left: 0; display: flex; align-items: center; justify-content: space-between; height: 5.5rem; padding: 0 var(--pad); color: var(--paper); mix-blend-mode: difference; transition: padding .5s cubic-bezier(.2,.75,.2,1); }
 .header.is-open { mix-blend-mode: normal; }
 .header__brand { display: block; }
-.menu-toggle { display: flex; align-items: center; gap: .8rem; padding: .4rem 0; border: 0; color: inherit; background: none; font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; }
+.menu-toggle { display: flex; align-items: center; min-height: 2.75rem; gap: .8rem; margin-right: 3.5rem; padding: .4rem 0; border: 0; color: inherit; background: none; font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; }
 .menu-toggle i { display: block; width: .45rem; height: .45rem; border-radius: 50%; background: var(--mineral); transition: transform .45s cubic-bezier(.2,.75,.2,1), background .3s; }
 .menu-toggle:hover i { transform: scale(2.25); }
+.language-toggle { position: fixed; z-index: 800; top: .85rem; right: var(--pad); display: grid; width: 2.75rem; height: 2.75rem; place-items: center; padding: 0; border: 1px solid rgba(238,236,230,.24); border-radius: 50%; color: var(--paper); background: rgba(12,13,11,.12); font-size: .62rem; font-weight: 500; letter-spacing: .14em; text-indent: .14em; text-transform: uppercase; mix-blend-mode: difference; transition: color .3s, border-color .3s, background .3s, transform .35s cubic-bezier(.16,1,.3,1), right .35s; }
+.language-toggle:hover { border-color: var(--paper); transform: scale(1.05); }
+.emdp-modal-open .language-toggle { right: 7.5rem; border-color: rgba(168,181,162,.38); background: rgba(9,10,8,.7); mix-blend-mode: normal; }
 .nav { position: fixed; z-index: -1; inset: 0; display: grid; place-items: center; visibility: hidden; color: var(--paper); background: rgba(17, 18, 16, .88); opacity: 0; transform: translateY(-1rem); transition: opacity .5s, transform .5s, visibility .5s; mix-blend-mode: normal; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 .is-open .nav { visibility: visible; opacity: 1; transform: none; }
 .nav ol { width: min(80vw, 60rem); margin: 0; padding: 0; list-style: none; counter-reset: nav; }
@@ -147,6 +150,7 @@ button { font: inherit; }
 .earth-zoom__outro { position: absolute; z-index: 4; right: var(--pad); bottom: clamp(4rem, 9vh, 8rem); text-align: right; opacity: 0; pointer-events: none; will-change: opacity, transform; }
 .earth-zoom__outro > span { font-size: .5rem; letter-spacing: .14em; text-transform: uppercase; }
 .earth-zoom__outro p { margin: 1rem 0 0; font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(2.6rem, 5vw, 6rem); line-height: .9; letter-spacing: -.04em; }
+.earth-zoom__mobile-composition { display: contents; }
 .earth-zoom__mobile-list { display: none; }
 .earth-zoom__disclaimer { position: absolute; z-index: 4; bottom: 2.1rem; left: var(--pad); margin: 0; color: rgba(238,236,230,.4); font-size: .45rem; letter-spacing: .12em; text-transform: uppercase; }
 
@@ -387,6 +391,34 @@ button { font: inherit; }
   .hero__line--offset { padding-left: clamp(1rem, 8vw, 2rem); }
   .intro__lead { font-size: clamp(3rem, 13.25vw, 3.7rem); line-height: 1.09; letter-spacing: -.038em; }
   .gallery__title, .about h2, .contact h2 { font-size: clamp(3.8rem, 18vw, 4.8rem); line-height: .92; }
+}
+
+@media (max-width: 820px) {
+  .earth-zoom { height: 390svh; }
+  .earth-zoom__canvas { opacity: .62; filter: blur(1.5px) brightness(.82) contrast(.88); transform: scale(1.01); }
+  .earth-zoom__vignette::before { inset: .7rem; }
+  .earth-zoom__intro { padding: 6rem var(--pad); }
+  .earth-zoom__intro h2 { margin-top: 5rem; font-size: clamp(4rem, 18vw, 6rem); line-height: .88; }
+  .earth-zoom__intro > p { width: 84%; margin-top: 2.5rem; }
+  .earth-zoom__hud { top: 5.3rem; right: var(--pad); }
+  .earth-zoom__hud > span { display: none; }
+  .earth-zoom__hud strong { grid-column: 1 / -1; }
+  .earth-zoom__hud i { width: 7rem; }
+  .earth-zoom__locations { display: none; }
+  .earth-zoom__mobile-composition { position: absolute; z-index: 4; top: clamp(10.5rem, 22svh, 13.5rem); right: var(--pad); bottom: clamp(2rem, 4svh, 3rem); left: var(--pad); display: flex; min-height: 0; flex-direction: column; gap: clamp(1.25rem, 3svh, 2rem); pointer-events: none; }
+  .earth-zoom__outro { position: relative; z-index: auto; right: auto; bottom: auto; left: auto; flex: 0 0 auto; text-align: left; }
+  .earth-zoom__outro > span { font-size: clamp(.48rem, 2.5vw, .62rem); }
+  .earth-zoom__outro p { margin-top: .85rem; font-size: clamp(3.2rem, 15vw, 5.25rem); line-height: .88; letter-spacing: -.045em; }
+  .earth-zoom__mobile-list { position: relative; z-index: auto; right: auto; bottom: auto; left: auto; display: grid; min-width: 0; min-height: 0; margin: 0; padding: .7rem 0 0; overflow-x: hidden; overflow-y: auto; border-top: 1px solid rgba(168,181,162,.3); list-style: none; opacity: 0; background: linear-gradient(0deg, rgba(12,13,11,.9), rgba(12,13,11,.52)); scrollbar-width: thin; pointer-events: auto; }
+  .earth-zoom__mobile-list li { min-width: 0; border-bottom: 1px solid rgba(255,255,255,.1); }
+  .earth-zoom__mobile-list li button { display: grid; grid-template-columns: 2.15rem 2rem minmax(0, 1fr); align-items: center; width: 100%; min-height: 2.75rem; padding: .5rem 0; border: 0; color: var(--paper); background: transparent; text-align: left; }
+  .earth-zoom__mobile-list .earth-location__flag.is-compact { position: relative; bottom: auto; left: auto; width: 1.9rem; height: 2.05rem; transform: none; transform-origin: center; }
+  .earth-zoom__mobile-list li button > span { color: var(--mineral); font-size: .5rem; letter-spacing: .12em; }
+  .earth-zoom__mobile-list li.is-active button { background: rgba(168,181,162,.08); }
+  .earth-zoom__mobile-list div { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .7rem; }
+  .earth-zoom__mobile-list strong { min-width: 0; overflow: hidden; font-size: .52rem; font-weight: 400; letter-spacing: .04em; text-overflow: ellipsis; white-space: nowrap; }
+  .earth-zoom__mobile-list small { color: rgba(238,236,230,.48); font-size: .4rem; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+  .earth-zoom__disclaimer { display: none; }
 }
 
 @media (min-width: 1800px) {

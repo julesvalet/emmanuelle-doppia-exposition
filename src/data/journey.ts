@@ -12,6 +12,7 @@ export type JourneyArtwork = {
   alt: string
   type: 'image' | 'placeholder'
   location: string
+  locationName: string
   width: number
   height: number
   dimensions: string
@@ -142,6 +143,7 @@ export const catalogueArtworks: JourneyArtwork[] = catalogue.map<JourneyArtwork>
     alt: `${entry.title}, photographie de la série ${location.name} par Emmanuelle Doppia.`,
     type: 'image' as const,
     location: entry.location,
+    locationName: location.name,
     width: asset.width,
     height: asset.height,
     dimensions: `${asset.width} × ${asset.height}`,

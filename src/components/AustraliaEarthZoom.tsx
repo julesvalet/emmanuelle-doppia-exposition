@@ -5,6 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { australiaOutline, type GeoPoint } from '../data/australiaOutline'
 import { journeyLocations, type JourneyLocation } from '../data/journey'
 import { useModalScrollLock } from '../hooks/useModalScrollLock'
+import { useLanguage } from '../i18n'
 import { JourneyGallery } from './JourneyGallery'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -23,6 +24,8 @@ type Scene = {
   cy: number
   radius: number
 }
+
+type PhaseKey = 'orbit' | 'approach' | 'australia' | 'itinerary'
 
 const DEG = Math.PI / 180
 const TAU = Math.PI * 2
@@ -169,10 +172,18 @@ export function AustraliaEarthZoom() {
   const progressRef = useRef<HTMLSpanElement>(null)
   const mobileListRef = useRef<HTMLOListElement>(null)
   const markerRefs = useRef<Array<HTMLButtonElement | null>>([])
+  const { t } = useLanguage()
+  const currentPhaseRef = useRef<PhaseKey>('orbit')
+  const phaseTranslationsRef = useRef(t.earth.phases)
+  phaseTranslationsRef.current = t.earth.phases
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   const [openLocationId, setOpenLocationId] = useState<string | null>(null)
   const openLocation = journeyLocations.find((location) => location.id === openLocationId) ?? null
   useModalScrollLock(openLocation !== null)
+
+  useEffect(() => {
+    if (phaseRef.current) phaseRef.current.textContent = t.earth.phases[currentPhaseRef.current]
+  }, [t])
 
   useEffect(() => {
     const section = sectionRef.current
@@ -212,7 +223,7 @@ export function AustraliaEarthZoom() {
     let lastPhase = ''
 
     const sceneFor = (progress: number): Scene => {
-      const mobile = width <= 760
+      const mobile = width <= 820
       const travel = ease((progress - 0.06) / 0.58)
       const zoom = ease(progress / 0.76)
       const baseRadius = Math.min(width, height) * (mobile ? 0.31 : 0.29)
@@ -251,7 +262,7 @@ export function AustraliaEarthZoom() {
       context.strokeStyle = `rgba(168,181,162,${0.2 + progress * 0.08})`
       context.lineWidth = Math.max(0.55, 1 - progress * 0.25)
 
-      const gridStep = width <= 760 ? 45 : 30
+      const gridStep = width <= 820 ? 45 : 30
       for (let latitude = -60; latitude <= 60; latitude += gridStep) {
         const points: GeoPoint[] = []
         for (let longitude = -180; longitude <= 180; longitude += 3) points.push([longitude, latitude])
@@ -327,7 +338,7 @@ export function AustraliaEarthZoom() {
     }
 
     const placeLabels = (points: ProjectedPoint[]) => {
-      if (width <= 760) return
+      if (width <= 820) return
 
       type LabelRect = { left: number; top: number; right: number; bottom: number }
       const margin = Math.max(18, width * 0.018)
@@ -404,15 +415,16 @@ export function AustraliaEarthZoom() {
       mobileList.style.transform = `translateY(${(1 - outroProgress) * 24}px)`
 
       progressLine.style.transform = `scaleX(${progress})`
-      const nextPhase = progress < 0.18
-        ? 'Orbite'
+      const nextPhase: PhaseKey = progress < 0.18
+        ? 'orbit'
         : progress < 0.52
-          ? 'Approche'
+          ? 'approach'
           : progress < 0.72
-            ? 'Australie'
-            : 'Itinéraire'
+            ? 'australia'
+            : 'itinerary'
       if (nextPhase !== lastPhase) {
-        phase.textContent = nextPhase
+        currentPhaseRef.current = nextPhase
+        phase.textContent = phaseTranslationsRef.current[nextPhase]
         lastPhase = nextPhase
       }
 
@@ -494,7 +506,7 @@ export function AustraliaEarthZoom() {
       const bounds = canvas.getBoundingClientRect()
       width = Math.max(1, bounds.width)
       height = Math.max(1, bounds.height)
-      dpr = Math.min(devicePixelRatio || 1, width <= 760 ? 1 : 1.5)
+      dpr = Math.min(devicePixelRatio || 1, width <= 820 ? 1 : 1.5)
       canvas.width = Math.round(width * dpr)
       canvas.height = Math.round(height * dpr)
       context.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -545,6 +557,9 @@ export function AustraliaEarthZoom() {
     }
   }, [])
 
+  const locationCopy = (locationId: string) => t.earth.locations[locationId as keyof typeof t.earth.locations]
+  const photographCount = (count: number) => `${count} ${count > 1 ? t.common.photographs : t.common.photograph}`
+
   return (
     <section className="earth-zoom" id="voyage" aria-labelledby="earth-zoom-title" data-chapter ref={sectionRef}>
       <div className="earth-zoom__sticky">
@@ -553,15 +568,15 @@ export function AustraliaEarthZoom() {
 
         <div className="earth-zoom__intro" ref={introRef}>
           <div className="section-kicker">
-            <span>02</span><span>Cartographie</span><span>Australie</span>
+            <span>02</span><span>{t.earth.cartography}</span><span>{t.earth.australia}</span>
           </div>
-          <h2 id="earth-zoom-title">Vers le sud,<br /><em>lentement.</em></h2>
-          <p>De Sydney à Uluru–Kata Tjuta, six étapes composent le territoire de l’exposition.</p>
+          <h2 id="earth-zoom-title">{t.earth.titleFirst}<br /><em>{t.earth.titleSecond}</em></h2>
+          <p>{t.earth.introduction}</p>
         </div>
 
         <div className="earth-zoom__hud" aria-hidden="true">
-          <span>Transition géographique</span>
-          <strong ref={phaseRef}>Orbite</strong>
+          <span>{t.earth.transition}</span>
+          <strong ref={phaseRef}>{t.earth.phases.orbit}</strong>
           <i><span ref={progressRef} /></i>
         </div>
 
@@ -572,9 +587,9 @@ export function AustraliaEarthZoom() {
               type="button"
               key={location.id}
               ref={(node) => { markerRefs.current[index] = node }}
-              aria-label={`Ouvrir le contenu de l’étape ${location.label}, ${location.name}`}
+              aria-label={`${t.earth.openStep} ${location.label}, ${location.name}`}
               aria-pressed={selectedLocationId === location.id}
-              data-cursor="Ouvrir"
+              data-cursor={t.common.open}
               onMouseEnter={() => preloadLocationPreview(location)}
               onFocus={() => preloadLocationPreview(location)}
               onClick={() => {
@@ -589,34 +604,36 @@ export function AustraliaEarthZoom() {
               </span>
               <span className="earth-location__card">
                 <b>{location.name}</b>
-                <em>{location.artworks.length} photographie{location.artworks.length > 1 ? 's' : ''}</em>
-                <span>{location.region}<br />{location.description}</span>
+                <em>{photographCount(location.artworks.length)}</em>
+                <span>{locationCopy(location.id).region}<br />{locationCopy(location.id).description}</span>
               </span>
             </button>
           ))}
         </div>
 
-        <div className="earth-zoom__outro" ref={outroRef}>
-          <span>Six séries photographiques</span>
-          <p>Chaque point<br /><em>ouvre un regard.</em></p>
+        <div className="earth-zoom__mobile-composition">
+          <div className="earth-zoom__outro" ref={outroRef}>
+            <span>{t.earth.sixSeries}</span>
+            <p>{t.earth.everyPoint}<br /><em>{t.earth.opensView}</em></p>
+          </div>
+
+          <ol className="earth-zoom__mobile-list" ref={mobileListRef}>
+            {journeyLocations.map((location) => (
+              <li key={location.id} className={selectedLocationId === location.id ? 'is-active' : ''}>
+                <button type="button" aria-label={`${t.earth.openStep} ${location.label}, ${location.name}`} onFocus={() => preloadLocationPreview(location)} onTouchStart={() => preloadLocationPreview(location)} onClick={() => {
+                  setSelectedLocationId(location.id)
+                  setOpenLocationId(location.id)
+                }}>
+                  <JourneyFlagIcon locationId={location.id} compact />
+                  <span>{location.label}</span>
+                  <div><strong>{location.name}</strong><small>{photographCount(location.artworks.length)}</small></div>
+                </button>
+              </li>
+            ))}
+          </ol>
         </div>
 
-        <ol className="earth-zoom__mobile-list" ref={mobileListRef}>
-          {journeyLocations.map((location) => (
-            <li key={location.id} className={selectedLocationId === location.id ? 'is-active' : ''}>
-              <button type="button" onFocus={() => preloadLocationPreview(location)} onTouchStart={() => preloadLocationPreview(location)} onClick={() => {
-                setSelectedLocationId(location.id)
-                setOpenLocationId(location.id)
-              }}>
-                <JourneyFlagIcon locationId={location.id} compact />
-                <span>{location.label}</span>
-                <div><strong>{location.name}</strong><small>{location.artworks.length} photographie{location.artworks.length > 1 ? 's' : ''}</small></div>
-              </button>
-            </li>
-          ))}
-        </ol>
-
-        <p className="earth-zoom__disclaimer">6 étapes · Sydney → Uluru–Kata Tjuta</p>
+        <p className="earth-zoom__disclaimer">{t.earth.route}</p>
       </div>
 
       {openLocation && createPortal((
