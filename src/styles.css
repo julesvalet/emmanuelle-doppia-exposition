@@ -71,6 +71,35 @@ button { font: inherit; }
 .nav a:hover { padding-left: .18em; color: var(--mineral); }
 .nav a:hover::after { opacity: 1; transform: translate(0,-50%); }
 
+.poster { position: relative; padding-top: calc(5.5rem + env(safe-area-inset-top, 0px)); overflow: hidden; color: var(--paper); background: var(--ink); isolation: isolate; }
+.poster picture { display: block; }
+.poster__image { display: block; width: 100%; height: auto; }
+/* Bande de brume cantonnée à la ligne d'arbres : deux ou trois nuages seulement la traversent, à intervalles désynchronisés. */
+.poster__clouds { position: absolute; z-index: 2; top: 38%; right: 0; bottom: 0; left: 0; overflow: hidden; pointer-events: none; }
+.poster__clouds i {
+  position: absolute;
+  top: var(--cloud-top);
+  width: var(--cloud-width);
+  height: var(--cloud-height);
+  opacity: 0;
+  background:
+    radial-gradient(closest-side ellipse at 27% 62%, rgba(230,224,212,.5), rgba(230,224,212,0)),
+    radial-gradient(closest-side ellipse at 54% 40%, rgba(241,236,226,.55), rgba(241,236,226,0)),
+    radial-gradient(closest-side ellipse at 78% 61%, rgba(224,216,203,.42), rgba(224,216,203,0));
+  transform: translate3d(-45%, 0, 0);
+  animation: poster-cloud-drift var(--cloud-duration) linear var(--cloud-delay) infinite;
+  will-change: transform, opacity;
+}
+.poster__clouds i:nth-child(1) { --cloud-top: 4%; --cloud-width: 40%; --cloud-height: 64%; --cloud-peak: .17; --cloud-duration: 46s; --cloud-delay: -6s; }
+.poster__clouds i:nth-child(2) { --cloud-top: 30%; --cloud-width: 29%; --cloud-height: 46%; --cloud-peak: .12; --cloud-duration: 67s; --cloud-delay: -28s; }
+.poster__clouds i:nth-child(3) { --cloud-top: 45%; --cloud-width: 52%; --cloud-height: 40%; --cloud-peak: .09; --cloud-duration: 83s; --cloud-delay: -55s; }
+/* La traversée n'occupe que ~31% du cycle : le reste du temps le nuage est invisible, d'où l'apparition intermittente. */
+@keyframes poster-cloud-drift {
+  0%, 2% { opacity: 0; transform: translate3d(-45%, 0, 0); }
+  9%, 24% { opacity: var(--cloud-peak); }
+  33%, 100% { opacity: 0; transform: translate3d(135%, 0, 0); }
+}
+
 .hero { position: relative; min-height: 100svh; padding: clamp(9rem, 17vh, 12rem) var(--pad) 2rem; overflow: hidden; color: var(--paper); background: var(--ink); isolation: isolate; }
 .hero::before { content: ''; position: absolute; z-index: -1; top: 0; bottom: 0; left: 25%; width: 1px; background: rgba(255,255,255,.07); box-shadow: 25vw 0 rgba(255,255,255,.07), 50vw 0 rgba(255,255,255,.07); }
 .hero__meta { position: relative; display: flex; justify-content: space-between; padding-top: .7rem; border-top: 1px solid rgba(255,255,255,.3); font-size: .63rem; letter-spacing: .16em; text-transform: uppercase; }
@@ -315,6 +344,11 @@ button { font: inherit; }
   .chapter-rail { display: none; }
   .ambient-grain { opacity: .035; }
   .header { height: calc(4.5rem + env(safe-area-inset-top, 0px)); }
+  .poster { padding-top: calc(4.5rem + env(safe-area-inset-top, 0px)); }
+  .poster__clouds { top: 34%; }
+  .poster__clouds i:nth-child(1) { --cloud-width: 58%; --cloud-peak: .15; }
+  .poster__clouds i:nth-child(2) { --cloud-width: 44%; --cloud-peak: .11; }
+  .poster__clouds i:nth-child(3) { --cloud-width: 72%; --cloud-peak: .08; }
   .header.is-lightbox .menu-toggle { display: none; }
   .header__controls { gap: .2rem; }
   .header__controls > button { padding-inline: .5rem; }
@@ -464,6 +498,7 @@ button { font: inherit; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .ambient-grain { display: none; }
   .particle-ribbon-overlay { display: none; }
+  .poster__clouds { display: none; }
   .earth-zoom { height: auto; min-height: 100svh; }
   .earth-zoom__sticky { position: relative; min-height: 100svh; }
 }

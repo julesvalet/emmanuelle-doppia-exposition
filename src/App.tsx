@@ -102,6 +102,22 @@ function App() {
       <aside className="chapter-rail" aria-hidden="true"><span>Index</span><div><span ref={chapter}>01</span><i>/</i><span>05</span></div></aside>
       <Header />
       <main id="main">
+        <section className="poster" aria-label={t.poster.label}>
+          <picture>
+            <source media="(max-width: 760px)" srcSet={`${import.meta.env.BASE_URL}affiche/expozition-affiche-mobile.jpg`} width={1240} height={326} />
+            <img
+              className="poster__image"
+              src={`${import.meta.env.BASE_URL}affiche/expozition-affiche.jpg`}
+              alt={t.poster.alt}
+              width={2400}
+              height={678}
+              fetchPriority="high"
+              decoding="async"
+            />
+          </picture>
+          <div className="poster__clouds" aria-hidden="true"><i /><i /><i /></div>
+        </section>
+
         <section className="hero" id="ouverture" aria-labelledby="hero-title" data-chapter>
           <div className="hero__meta"><span>{t.hero.exhibition}</span><span>{t.hero.edition} {site.year}</span></div>
           <h1 className="hero__title--exhibition" id="hero-title">

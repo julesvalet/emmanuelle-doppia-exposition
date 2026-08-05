@@ -40,6 +40,10 @@ export const translations = {
       titleSecond: 'à l’Ocre',
       scroll: 'Faire défiler',
     },
+    poster: {
+      label: 'Affiche de l’exposition',
+      alt: 'Affiche de l’exposition EXPOZITION : une ligne de pins en silhouette sous un ciel nuageux, traversée par le lettrage blanc « EXPOZITION » dont les lettres « OZ » sont traitées en texture bois.',
+    },
     intro: {
       preamble: 'Préambule',
       gaze: 'Le regard',
@@ -150,6 +154,10 @@ export const translations = {
       titleFirst: 'From the Opera',
       titleSecond: 'to Ochre',
       scroll: 'Scroll',
+    },
+    poster: {
+      label: 'Exhibition poster',
+      alt: 'Poster for the EXPOZITION exhibition: a line of silhouetted pines under a cloudy sky, crossed by the white “EXPOZITION” lettering whose “OZ” letters are rendered in a wood texture.',
     },
     intro: {
       preamble: 'Preamble',
