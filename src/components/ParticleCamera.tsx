@@ -58,6 +58,7 @@ export function ParticleCamera() {
 
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
     const hero = document.getElementById('ouverture')
+    const poster = document.querySelector<HTMLElement>('.poster')
     let compact = matchMedia('(max-width: 760px)').matches
     const particles: Particle[] = []
     let width = innerWidth
@@ -122,7 +123,13 @@ export function ParticleCamera() {
       const rect = hero?.getBoundingClientRect()
       if (!rect) return
       const fadeDistance = Math.max(height * 0.12, 80)
-      scrollVisibility = rect.bottom > 0 && rect.top < height ? clamp01(rect.bottom / fadeDistance) : 0
+      const heroVisibility = rect.bottom > 0 && rect.top < height ? clamp01(rect.bottom / fadeDistance) : 0
+      // Keep the effect fully hidden while any part of the poster is still on screen, then
+      // ramp it in smoothly as the poster's bottom edge clears the top of the viewport —
+      // avoids an abrupt pop right as the poster scrolls away.
+      const posterRect = poster?.getBoundingClientRect()
+      const posterClearance = posterRect ? clamp01(-posterRect.bottom / fadeDistance) : 1
+      scrollVisibility = Math.min(heroVisibility, posterClearance)
       if (scrollVisibility > 0.001) start()
       else context.clearRect(0, 0, width, height)
     }
