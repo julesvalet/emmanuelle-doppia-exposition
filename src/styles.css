@@ -332,10 +332,12 @@ button { font: inherit; }
 .footer a::after { content: ''; position: absolute; right: 0; bottom: -.35rem; width: 100%; height: 1px; background: var(--mineral); transform: scaleX(0); transform-origin: right; transition: transform .45s cubic-bezier(.2,.75,.2,1); }
 .footer a:hover::after { transform: scaleX(1); transform-origin: left; }
 
-.cursor { position: fixed; z-index: 1000; top: -.35rem; left: -.35rem; width: .7rem; height: .7rem; pointer-events: none; }
+.cursor { position: fixed; z-index: 1000; top: -.4rem; left: -.4rem; width: .8rem; height: .8rem; pointer-events: none; }
+/* Anneau sombre non blendé : garantit la lisibilité sur les zones à tons moyens (ciel de l'affiche) où difference produit gris-sur-gris. */
+.cursor::before { content: ''; position: absolute; inset: -1px; border-radius: 50%; border: 1px solid rgba(17,18,16,.4); transition: opacity .2s, transform .25s; }
 .cursor i { position: absolute; inset: 0; border-radius: 50%; background: white; mix-blend-mode: difference; transition: opacity .2s, transform .25s; }
 .cursor span { position: absolute; top: 50%; left: 50%; display: grid; place-items: center; width: 4.25rem; height: 4.25rem; border-radius: 50%; color: var(--ink); background: var(--mineral); font-size: .5rem; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; opacity: 0; transform: translate(-50%,-50%) scale(.25); transition: opacity .25s, transform .45s cubic-bezier(.16,1,.3,1); }
-.cursor.is-active i { opacity: 0; transform: scale(.2); }
+.cursor.is-active i, .cursor.is-active::before { opacity: 0; transform: scale(.2); }
 .cursor.is-active span { opacity: 1; transform: translate(-50%,-50%) scale(1); }
 
 @media (max-width: 760px) {
