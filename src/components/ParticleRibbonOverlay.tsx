@@ -176,7 +176,7 @@ export function ParticleRibbonOverlay({ enabled = true, imageRef }: ParticleRibb
 
   useEffect(() => {
     const canvases = [rearCanvasRef.current, middleCanvasRef.current, frontCanvasRef.current]
-    const section = rearCanvasRef.current?.closest<HTMLElement>('.intro')
+    const section = rearCanvasRef.current?.closest<HTMLElement>('.intro__visual')
     const image = imageRef.current
     if (!enabled || !section || !image || canvases.some((canvas) => !canvas)) return
 

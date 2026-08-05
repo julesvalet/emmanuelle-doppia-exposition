@@ -19,6 +19,14 @@ gsap.registerPlugin(ScrollTrigger)
 const EDITORIAL_PARTICLE_RIBBON_ENABLED = true
 const introArtwork = catalogueArtworks.find((artwork) => artwork.order === 3 && artwork.type === 'image')
 
+function renderEmphasis(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((chunk, index) => (
+    chunk.startsWith('**') && chunk.endsWith('**')
+      ? <strong key={index}>{chunk.slice(2, -2)}</strong>
+      : chunk
+  ))
+}
+
 function App() {
   const app = useRef<HTMLDivElement>(null)
   const chapter = useRef<HTMLSpanElement>(null)
@@ -128,30 +136,36 @@ function App() {
         </section>
 
         <section className="intro editorial-section" aria-labelledby="intro-title">
-          <div className="editorial-text-layer">
-            <div className="section-kicker reveal"><span>01</span><span>{t.intro.preamble}</span><span>{t.intro.gaze}</span></div>
+          <div className="section-kicker reveal"><span>01</span><span>{t.intro.preamble}</span><span>{t.intro.gaze}</span></div>
+          <div className="intro__layout">
             {introArtwork && (
-              <figure className="intro__artwork" aria-label={introArtwork.title}>
-                <span className="intro__artwork-frame">
-                  <picture>
-                    <source media="(max-width: 760px)" srcSet={introArtwork.mobileSrc} />
-                    <img
-                      ref={introImage}
-                      src={introArtwork.src}
-                      alt={`${introArtwork.title}, ${t.accessibility.artworkAlt} Uluru–Kata Tjuta ${t.accessibility.byArtist}.`}
-                      width={introArtwork.width || undefined}
-                      height={introArtwork.height || undefined}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </picture>
-                </span>
-              </figure>
+              <div className="intro__visual">
+                <figure className="intro__artwork" aria-label={introArtwork.title}>
+                  <span className="intro__artwork-frame">
+                    <picture>
+                      <source media="(max-width: 760px)" srcSet={introArtwork.mobileSrc} />
+                      <img
+                        ref={introImage}
+                        src={introArtwork.src}
+                        alt={`${introArtwork.title}, ${t.accessibility.artworkAlt} Uluru–Kata Tjuta ${t.accessibility.byArtist}.`}
+                        width={introArtwork.width || undefined}
+                        height={introArtwork.height || undefined}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </picture>
+                  </span>
+                </figure>
+                <ParticleRibbonOverlay enabled={EDITORIAL_PARTICLE_RIBBON_ENABLED} imageRef={introImage} />
+              </div>
             )}
-            <p className="intro__lead editorial-text reveal" id="intro-title">{t.intro.statement}</p>
-            <div className="intro__aside reveal"><span>{t.intro.exhibitionBy}</span><strong>{site.artist}</strong></div>
+            <div className="intro__copy">
+              <div className="intro__lead editorial-text reveal" id="intro-title">
+                {t.intro.statement.map((paragraph, index) => <p key={index}>{renderEmphasis(paragraph)}</p>)}
+              </div>
+              <div className="intro__aside reveal"><span>{t.intro.exhibitionBy}</span><strong>{site.artist}</strong></div>
+            </div>
           </div>
-          <ParticleRibbonOverlay enabled={EDITORIAL_PARTICLE_RIBBON_ENABLED} imageRef={introImage} />
         </section>
 
         <div className="marquee" aria-hidden="true"><div className="marquee__track">{t.intro.marquee}</div></div>
