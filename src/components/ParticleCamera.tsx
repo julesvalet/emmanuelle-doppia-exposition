@@ -63,7 +63,9 @@ export function ParticleCamera() {
     const particles: Particle[] = []
     let width = innerWidth
     let height = innerHeight
-    let dpr = Math.min(devicePixelRatio || 1, compact ? 1 : 1.5)
+    // Sub-pixel dots at dpr 1 were the other half of the mobile blur: a 0.5px radius arc lands
+    // as a smear. Even at 2 the compact canvas stays well under the desktop one in device pixels.
+    let dpr = Math.min(devicePixelRatio || 1, compact ? 2 : 1.5)
     let frame = 0
     let previousTime = performance.now()
     const startedAt = previousTime
@@ -77,17 +79,22 @@ export function ParticleCamera() {
     let pointerY = -10_000
     let pointerInfluence = 0
 
+    // The silhouette spans ~2.2 × 1.55 units, so the compact scale is what decides whether the
+    // body/lens/viewfinder read as a camera or as a smudge: below ~110 the 0.1-unit details
+    // (viewfinder, shutter button) land under 12px and the whole thing collapses into a blur.
+    // cx/cy are pulled off the right edge to keep the wider shape clear of the "faire défiler"
+    // marker and inside the viewport.
     const layout = () => ({
-      cx: compact ? width * 0.69 : width * 0.77,
-      cy: compact ? height * 0.73 : height * 0.58,
-      scale: compact ? Math.min(width * 0.2, 82) : Math.min(width * 0.135, 205),
+      cx: compact ? width * 0.55 : width * 0.77,
+      cy: compact ? height * 0.7 : height * 0.58,
+      scale: compact ? Math.min(width * 0.3, 132) : Math.min(width * 0.135, 205),
     })
 
     const resize = () => {
       width = innerWidth
       height = innerHeight
       compact = width <= 760
-      dpr = Math.min(devicePixelRatio || 1, compact ? 1 : 1.5)
+      dpr = Math.min(devicePixelRatio || 1, compact ? 2 : 1.5)
       canvas.width = Math.round(width * dpr)
       canvas.height = Math.round(height * dpr)
       canvas.style.width = `${width}px`
@@ -97,7 +104,9 @@ export function ParticleCamera() {
 
     resize()
     const initialLayout = layout()
-    const count = compact ? Math.min(430, Math.round(width * 1.05)) : Math.min(1250, Math.round(width * 0.78))
+    // Roughly doubled with the scale: the silhouette now covers ~2.2× the area, so the old count
+    // would have thinned it back out into a haze.
+    const count = compact ? Math.min(880, Math.round(width * 2.05)) : Math.min(1250, Math.round(width * 0.78))
 
     for (let index = 0; index < count; index += 1) {
       const [tx, ty, tz] = cameraPoint(index, count)
@@ -111,7 +120,7 @@ export function ParticleCamera() {
         tx,
         ty,
         tz,
-        size: compact ? 0.45 + Math.random() * 0.72 : 0.45 + Math.random() * 1.05,
+        size: compact ? 0.5 + Math.random() * 0.8 : 0.45 + Math.random() * 1.05,
         alpha: 0.32 + Math.random() * 0.55,
       })
     }
@@ -233,7 +242,7 @@ export function ParticleCamera() {
           const dx = particle.x - pointerX
           const dy = particle.y - pointerY
           const distance = Math.hypot(dx, dy) || 1
-          const radius = compact ? 58 : 112
+          const radius = compact ? 84 : 112
           if (distance < radius) {
             const proximity = 1 - distance / radius
             const force = proximity * proximity * pointerInfluence * (compact ? 1.1 : 2.2) * delta
