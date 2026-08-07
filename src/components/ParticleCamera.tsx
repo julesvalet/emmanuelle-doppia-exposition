@@ -153,8 +153,9 @@ export function ParticleCamera() {
       // Keep the effect fully hidden while any part of the poster is still on screen, then
       // ramp it in smoothly as the poster's bottom edge clears the top of the viewport —
       // avoids an abrupt pop right as the poster scrolls away.
-      // Short ramp: the hero is exactly one viewport tall, so every pixel spent fading in
-      // is one less at full opacity before the preamble reaches the cloud.
+      // Short ramp: every pixel spent fading in is one less at full opacity before the
+      // preamble reaches the cloud. The hero carries --hero-run of extra height past the
+      // first viewport precisely to widen that window, so don't spend it here.
       const posterRect = poster?.getBoundingClientRect()
       const posterClearance = posterRect ? clamp01(-posterRect.bottom / 60) : 1
       scrollVisibility = Math.min(heroVisibility, posterClearance)

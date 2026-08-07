@@ -75,8 +75,13 @@ function App() {
           scrollTrigger: { trigger: element, start: 'top 89%' },
         })
       })
-      gsap.to('.hero h1', { yPercent: -11, opacity: 0.28, ease: 'none', scrollTrigger: { trigger: '.hero', start: '35% top', end: 'bottom top', scrub: true } })
-      gsap.to('.hero__line:nth-child(2) span', { xPercent: 4, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } })
+      // Measured off the viewport, not off the hero's own length: the title scrolls away within
+      // the first viewport, so percentages of a hero that is now taller than one screen would
+      // have started this parallax after the title had already left. Functions so a resize
+      // re-measures on ScrollTrigger.refresh().
+      const heroScrolled = (fraction: number) => () => `top top-=${innerHeight * fraction}`
+      gsap.to('.hero h1', { yPercent: -11, opacity: 0.28, ease: 'none', scrollTrigger: { trigger: '.hero', start: heroScrolled(0.35), end: heroScrolled(1), scrub: true } })
+      gsap.to('.hero__line:nth-child(2) span', { xPercent: 4, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: heroScrolled(1), scrub: true } })
       gsap.to('.marquee__track', { xPercent: -25, ease: 'none', scrollTrigger: { trigger: '.marquee', start: 'top bottom', end: 'bottom top', scrub: 1 } })
       gsap.to('.empty-stage__orbit', { rotate: 210, scale: 0.78, ease: 'none', scrollTrigger: { trigger: '.empty-stage', start: 'top bottom', end: 'bottom top', scrub: 1 } })
       gsap.to('.about__symbol', { rotate: 4, yPercent: -15, ease: 'none', scrollTrigger: { trigger: '.about', start: 'top bottom', end: 'bottom top', scrub: 1 } })
