@@ -327,9 +327,9 @@ button { font: inherit; }
 .lightbox button { border: 0; color: inherit; background: none; font-size: .65rem; letter-spacing: .1em; text-transform: uppercase; }
 /* Deliberately quiet: a hairline rule and muted body copy rather than a panel, so the specs
    sit under the configurator as a footnote and never compete with the price. */
-.print-specs { display: grid; gap: .45rem; margin: clamp(1.1rem, 2.2vh, 1.6rem) 0 0; padding: clamp(.9rem, 1.8vh, 1.25rem) 0 0; border-top: 1px solid rgba(168,181,162,.14); color: rgba(238,236,230,.5); font-size: .58rem; line-height: 1.5; letter-spacing: .015em; list-style: none; }
+.print-specs { display: grid; gap: .62rem; margin: clamp(1.25rem, 2.4vh, 1.8rem) 0 0; padding: clamp(1rem, 2vh, 1.4rem) 0 0; border-top: 1px solid rgba(168,181,162,.14); color: rgba(238,236,230,.58); font-size: clamp(.78rem, .88vw, .92rem); line-height: 1.55; letter-spacing: .005em; list-style: none; }
 .print-specs li { margin: 0; text-wrap: pretty; }
-.print-specs span { margin-right: .35em; color: rgba(168,181,162,.68); font-size: .5rem; letter-spacing: .16em; text-transform: uppercase; }
+.print-specs span { margin-right: .4em; color: rgba(168,181,162,.72); font-size: .62rem; letter-spacing: .15em; text-transform: uppercase; }
 
 .lightbox button.lightbox__preorder { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 3.25rem; gap: 1rem; margin-top: clamp(1.25rem, 2.5vh, 2rem); padding: .85rem 1rem; border: 1px solid rgba(168,181,162,.32); color: rgba(238,236,230,.72); background: transparent; opacity: .78; }
 .lightbox__preorder span { font-size: .63rem; line-height: 1; letter-spacing: .14em; }
