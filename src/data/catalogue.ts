@@ -52,8 +52,8 @@ const createStandardFormats = (): PrintFormat[] => [
     widthCm: 20,
     heightCm: 30,
     options: [
-      { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 12 },
-      { id: 'with-support', label: { ...finishLabels.withSupport }, price: 30 },
+      { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 15 },
+      { id: 'with-support', label: { ...finishLabels.withSupport }, price: 35 },
     ],
   },
   {
@@ -62,8 +62,8 @@ const createStandardFormats = (): PrintFormat[] => [
     widthCm: 30,
     heightCm: 45,
     options: [
-      { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 20 },
-      { id: 'with-support', label: { ...finishLabels.withSupport }, price: 40 },
+      { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 25 },
+      { id: 'with-support', label: { ...finishLabels.withSupport }, price: 45 },
     ],
   },
 ]
@@ -76,8 +76,8 @@ const createFormatsForArtwork = (number: number): PrintFormat[] => {
       widthCm: 42,
       heightCm: 59.4,
       options: [
-        { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 25 },
-        { id: 'with-support', label: { ...finishLabels.withSupport }, price: 45 },
+        { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 28 },
+        { id: 'with-support', label: { ...finishLabels.withSupport }, price: 50 },
       ],
     }]
   }
@@ -93,8 +93,8 @@ const createFormatsForArtwork = (number: number): PrintFormat[] => {
         en: 'Print available exclusively in this size.',
       },
       options: [
-        { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 50 },
-        { id: 'with-support', label: { ...finishLabels.withSupport }, price: 70 },
+        { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 53 },
+        { id: 'with-support', label: { ...finishLabels.withSupport }, price: 75 },
       ],
     }]
   }
@@ -110,7 +110,7 @@ const createFormatsForArtwork = (number: number): PrintFormat[] => {
         en: 'Photograph not exhibited, but available to order.',
       },
       options: [
-        { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 25 },
+        { id: 'without-support', label: { ...finishLabels.withoutSupport }, price: 28 },
       ],
     }]
   }

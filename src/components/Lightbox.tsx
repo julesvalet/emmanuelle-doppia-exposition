@@ -149,6 +149,15 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
               <strong aria-live="polite">{currencyFormatter.format(selectedFinish.price)}</strong>
             </div>
           </section>
+          <ul className="print-specs" aria-label={t.shop.specifications}>
+            <li><span>{t.shop.paperLabel}</span> {t.shop.paper}</li>
+            {/* Only worth the room once the finish it describes is actually selected. */}
+            {selectedFinish.id === 'with-support' && (
+              <li><span>{t.shop.supportLabel}</span> {t.shop.support}</li>
+            )}
+            <li>{t.shop.certificate}</li>
+            <li>{t.shop.shipping}</li>
+          </ul>
           <button className="lightbox__preorder" type="button" disabled aria-disabled="true">
             <span>{t.shop.preorder}</span>
             <small>{t.shop.comingSoon}</small>
