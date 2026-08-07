@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { GalleryItem } from '../data/gallery'
+import { useImageZoom } from '../hooks/useImageZoom'
 import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import { useLanguage } from '../i18n'
 import { useInterfaceControls } from '../interfaceControls'
@@ -19,6 +20,7 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
   const item = activeIndex === null ? null : items[activeIndex]
   const [selectedFormatId, setSelectedFormatId] = useState('')
   const [selectedFinishId, setSelectedFinishId] = useState('')
+  const zoom = useImageZoom(item?.id)
 
   useEffect(() => {
     const firstFormat = item?.formats[0]
@@ -74,10 +76,21 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
               <strong>{t.common.originalMissing}</strong>
             </div>
           ) : (
-            <picture>
-              <source media="(max-width: 760px)" srcSet={item.mobileSrc} />
-              <img src={item.src} alt={`${item.title}, ${t.accessibility.artworkAlt} ${item.locationName} ${t.accessibility.byArtist}.`} width={item.width || undefined} height={item.height || undefined} />
-            </picture>
+            <div
+              className={`lightbox__zoom${zoom.isZoomed ? ' is-zoomed' : ''}${zoom.isPinching ? ' is-pinching' : ''}`}
+              ref={zoom.wrapRef}
+              style={zoom.style}
+              data-cursor-zoom
+              aria-label={zoom.isZoomed ? t.viewer.zoomOut : t.viewer.zoomIn}
+              onMouseEnter={zoom.handlers.onMouseEnter}
+              onMouseMove={zoom.handlers.onMouseMove}
+              onMouseLeave={zoom.handlers.onMouseLeave}
+            >
+              <picture>
+                <source media="(max-width: 760px)" srcSet={item.mobileSrc} />
+                <img src={item.src} alt={`${item.title}, ${t.accessibility.artworkAlt} ${item.locationName} ${t.accessibility.byArtist}.`} width={item.width || undefined} height={item.height || undefined} />
+              </picture>
+            </div>
           )}
         </div>
 
