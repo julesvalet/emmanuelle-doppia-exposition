@@ -78,17 +78,20 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
           ) : (
             <div
               className={`lightbox__zoom${zoom.isZoomed ? ' is-zoomed' : ''}${zoom.isPinching ? ' is-pinching' : ''}`}
-              ref={zoom.wrapRef}
               style={zoom.style}
-              data-cursor-zoom
-              aria-label={zoom.isZoomed ? t.viewer.zoomOut : t.viewer.zoomIn}
-              onMouseEnter={zoom.handlers.onMouseEnter}
-              onMouseMove={zoom.handlers.onMouseMove}
-              onMouseLeave={zoom.handlers.onMouseLeave}
             >
               <picture>
                 <source media="(max-width: 760px)" srcSet={item.mobileSrc} />
-                <img src={item.src} alt={`${item.title}, ${t.accessibility.artworkAlt} ${item.locationName} ${t.accessibility.byArtist}.`} width={item.width || undefined} height={item.height || undefined} />
+                <img
+                  ref={zoom.imgRef}
+                  src={item.src}
+                  alt={`${item.title}, ${t.accessibility.artworkAlt} ${item.locationName} ${t.accessibility.byArtist}.`}
+                  width={item.width || undefined}
+                  height={item.height || undefined}
+                  data-cursor-zoom
+                  onClick={zoom.handlers.onClick}
+                  onMouseMove={zoom.handlers.onMouseMove}
+                />
               </picture>
             </div>
           )}

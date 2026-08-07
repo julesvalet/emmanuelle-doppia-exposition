@@ -114,8 +114,6 @@ export const translations = {
       selectPhoto: 'Sélectionner une photographie',
       noPhotos: 'Les photographies de cette étape seront bientôt disponibles.',
       details: 'Détails de',
-      zoomIn: 'Zoomer',
-      zoomOut: 'Réduire',
     },
     shop: {
       configuration: 'Configuration du tirage',
@@ -245,8 +243,6 @@ export const translations = {
       selectPhoto: 'Select a photograph',
       noPhotos: 'The photographs from this stage will be available soon.',
       details: 'Details of',
-      zoomIn: 'Zoom in',
-      zoomOut: 'Zoom out',
     },
     shop: {
       configuration: 'Print configuration',

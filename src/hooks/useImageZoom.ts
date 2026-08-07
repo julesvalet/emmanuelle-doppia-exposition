@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react'
 
-const HOVER_SCALE = 1.7
+const ZOOM_SCALE = 1.7
 const TAP_SCALE = 2.1
 const MAX_PINCH_SCALE = 2.8
 const TAP_MAX_DURATION = 300
@@ -13,13 +13,15 @@ const restingZoom: ZoomState = { scale: 1, x: 50, y: 50 }
 
 const clampPercent = (value: number) => Math.min(100, Math.max(0, value))
 
-// Desktop hover-zoom (mouse, cursor position → transform-origin) and mobile tap/pinch-zoom
-// share one lens: a scale plus a transform-origin percentage, both driven into CSS custom
-// properties by the caller. Touch is wired with native listeners rather than React's
-// onTouch* props because React attaches touchmove passively, so preventDefault() there
-// can't stop the browser's own page-pinch gesture from fighting ours.
+// Click/tap toggles the zoom; while zoomed, the lens keeps tracking the cursor on desktop
+// (mousemove), and a click/tap anywhere outside the photo closes it. Every listener — mouse,
+// touch and the point-from-client math — reads off the <img> itself (imgRef) rather than the
+// wrapper around it, so the hit area matches the photo's visible edges exactly instead of the
+// wrapper's (larger, letterboxed) box. Touch is wired with native listeners rather than
+// React's onTouch* props because React attaches touchmove passively, so preventDefault()
+// there can't stop the browser's own page-pinch gesture from fighting ours.
 export function useImageZoom(resetKey: unknown) {
-  const wrapRef = useRef<HTMLDivElement>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
   const isFinePointer = useRef(typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches).current
   const [zoom, setZoom] = useState<ZoomState>(restingZoom)
   const [isPinching, setIsPinching] = useState(false)
@@ -31,36 +33,43 @@ export function useImageZoom(resetKey: unknown) {
   }, [resetKey])
 
   const pointFromClient = useCallback((clientX: number, clientY: number) => {
-    const img = wrapRef.current?.querySelector('img')
-    if (!img) return { x: 50, y: 50 }
-    const rect = img.getBoundingClientRect()
-    if (!rect.width || !rect.height) return { x: 50, y: 50 }
+    const rect = imgRef.current?.getBoundingClientRect()
+    if (!rect || !rect.width || !rect.height) return { x: 50, y: 50 }
     return {
       x: clampPercent(((clientX - rect.left) / rect.width) * 100),
       y: clampPercent(((clientY - rect.top) / rect.height) * 100),
     }
   }, [])
 
-  const onMouseEnter = useCallback((event: ReactMouseEvent<HTMLDivElement>) => {
+  const onClick = useCallback((event: ReactMouseEvent<HTMLImageElement>) => {
     if (!isFinePointer) return
-    const { x, y } = pointFromClient(event.clientX, event.clientY)
-    setZoom({ scale: HOVER_SCALE, x, y })
+    if (zoomRef.current.scale > 1) {
+      setZoom(restingZoom)
+      return
+    }
+    setZoom({ scale: ZOOM_SCALE, ...pointFromClient(event.clientX, event.clientY) })
   }, [isFinePointer, pointFromClient])
 
-  const onMouseMove = useCallback((event: ReactMouseEvent<HTMLDivElement>) => {
-    if (!isFinePointer) return
-    const { x, y } = pointFromClient(event.clientX, event.clientY)
-    setZoom((current) => ({ ...current, x, y }))
+  const onMouseMove = useCallback((event: ReactMouseEvent<HTMLImageElement>) => {
+    if (!isFinePointer || zoomRef.current.scale <= 1) return
+    setZoom((current) => ({ ...current, ...pointFromClient(event.clientX, event.clientY) }))
   }, [isFinePointer, pointFromClient])
 
-  const onMouseLeave = useCallback(() => {
-    if (!isFinePointer) return
-    setZoom((current) => ({ ...current, scale: 1 }))
-  }, [isFinePointer])
+  // A click or tap anywhere outside the photo closes an active zoom — the usual lightbox
+  // dismissal pattern. Pointerdown covers both mouse and touch, and taps on the image itself
+  // are excluded so this never fights the toggle-off logic below.
+  useEffect(() => {
+    const onDocumentPointerDown = (event: PointerEvent) => {
+      if (zoomRef.current.scale <= 1) return
+      if (imgRef.current && !imgRef.current.contains(event.target as Node)) setZoom(restingZoom)
+    }
+    document.addEventListener('pointerdown', onDocumentPointerDown)
+    return () => document.removeEventListener('pointerdown', onDocumentPointerDown)
+  }, [])
 
   useEffect(() => {
-    const wrap = wrapRef.current
-    if (!wrap) return
+    const img = imgRef.current
+    if (!img) return
 
     let pinchStartDistance = 0
     let pinchStartScale = 1
@@ -117,20 +126,20 @@ export function useImageZoom(resetKey: unknown) {
       tap = null
     }
 
-    wrap.addEventListener('touchstart', onTouchStart, { passive: true })
-    wrap.addEventListener('touchmove', onTouchMove, { passive: false })
-    wrap.addEventListener('touchend', onTouchEnd, { passive: true })
-    wrap.addEventListener('touchcancel', onTouchEnd, { passive: true })
+    img.addEventListener('touchstart', onTouchStart, { passive: true })
+    img.addEventListener('touchmove', onTouchMove, { passive: false })
+    img.addEventListener('touchend', onTouchEnd, { passive: true })
+    img.addEventListener('touchcancel', onTouchEnd, { passive: true })
     return () => {
-      wrap.removeEventListener('touchstart', onTouchStart)
-      wrap.removeEventListener('touchmove', onTouchMove)
-      wrap.removeEventListener('touchend', onTouchEnd)
-      wrap.removeEventListener('touchcancel', onTouchEnd)
+      img.removeEventListener('touchstart', onTouchStart)
+      img.removeEventListener('touchmove', onTouchMove)
+      img.removeEventListener('touchend', onTouchEnd)
+      img.removeEventListener('touchcancel', onTouchEnd)
     }
   }, [pointFromClient, resetKey])
 
   return {
-    wrapRef,
+    imgRef,
     isZoomed: zoom.scale > 1,
     isPinching,
     style: {
@@ -138,6 +147,6 @@ export function useImageZoom(resetKey: unknown) {
       '--zoom-x': `${zoom.x}%`,
       '--zoom-y': `${zoom.y}%`,
     } as CSSProperties,
-    handlers: { onMouseEnter, onMouseMove, onMouseLeave },
+    handlers: { onClick, onMouseMove },
   }
 }
