@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { GalleryItem } from '../data/gallery'
+import { useCart } from '../cart'
 import { useImageZoom } from '../hooks/useImageZoom'
 import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import { useLanguage } from '../i18n'
@@ -21,12 +22,18 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
   const [selectedFormatId, setSelectedFormatId] = useState('')
   const [selectedFinishId, setSelectedFinishId] = useState('')
   const zoom = useImageZoom(item?.id)
+  const { addItem } = useCart()
+  const [justAdded, setJustAdded] = useState(false)
 
   useEffect(() => {
     const firstFormat = item?.formats[0]
     setSelectedFormatId(firstFormat?.id ?? '')
     setSelectedFinishId(firstFormat?.options[0]?.id ?? '')
   }, [item?.id, item?.formats])
+
+  useEffect(() => {
+    setJustAdded(false)
+  }, [item?.id, selectedFormatId, selectedFinishId])
 
   useEffect(() => {
     if (!isOpen) return
@@ -64,6 +71,23 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
     if (!format) return
     setSelectedFormatId(format.id)
     setSelectedFinishId(format.options[0].id)
+  }
+
+  const handleAddToCart = () => {
+    addItem({
+      key: `${item.order}-${selectedFormat.id}-${selectedFinish.id}`,
+      artworkNumber: item.order,
+      artworkId: item.id,
+      title: item.title,
+      locationName: item.locationName,
+      formatId: selectedFormat.id,
+      formatLabel: selectedFormat.label,
+      finishId: selectedFinish.id,
+      finishLabel: selectedFinish.label,
+      unitPrice: selectedFinish.price,
+      thumbnail: item.mobileSrc || item.src,
+    })
+    setJustAdded(true)
   }
 
   return (
@@ -174,9 +198,9 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
             <li>{t.shop.certificate}</li>
             <li>{t.shop.shipping}</li>
           </ul>
-          <button className="lightbox__preorder" type="button" disabled aria-disabled="true">
-            <span>{t.shop.preorder}</span>
-            <small>{t.shop.comingSoon}</small>
+          <button className="lightbox__preorder" type="button" onClick={handleAddToCart}>
+            <span>{justAdded ? t.shop.addedToCart : t.shop.addToCart}</span>
+            <small>{currencyFormatter.format(selectedFinish.price)}</small>
           </button>
         </aside>
       </div>

@@ -1,5 +1,9 @@
 /// <reference types="vite/client" />
 
+interface ImportMetaEnv {
+  readonly VITE_PAYPAL_CLIENT_ID?: string
+}
+
 declare module 'virtual:gallery-assets' {
   const assets: Array<{
     src: string

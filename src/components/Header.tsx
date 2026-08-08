@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { site } from '../data/site'
+import { useCart } from '../cart'
 import { useLanguage } from '../i18n'
 import { useInterfaceControls } from '../interfaceControls'
 import { Logo } from './Logo'
@@ -8,6 +9,7 @@ export function Header() {
   const [open, setOpen] = useState(false)
   const { t, toggleLanguage } = useLanguage()
   const { modalClose } = useInterfaceControls()
+  const { itemCount, openCart } = useCart()
 
   useEffect(() => {
     const close = () => setOpen(false)
@@ -50,6 +52,16 @@ export function Header() {
           onClick={toggleLanguage}
         >
           <span>{t.languageCode}</span>
+        </button>
+        <button
+          className="cart-toggle"
+          type="button"
+          aria-label={t.cart.openCart}
+          title={t.cart.openCart}
+          onClick={openCart}
+        >
+          <span>{t.cart.title}</span>
+          {itemCount > 0 && <i aria-hidden="true">{itemCount}</i>}
         </button>
         {modalClose && (
           <button className="header__modal-close" type="button" onClick={modalClose} aria-label={t.common.close}>

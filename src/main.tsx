@@ -9,13 +9,16 @@ import './styles.css'
 import App from './App'
 import { LanguageProvider } from './i18n'
 import { InterfaceControlsProvider } from './interfaceControls'
+import { CartProvider } from './cart'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <LanguageProvider>
-      <InterfaceControlsProvider>
-        <App />
-      </InterfaceControlsProvider>
+      <CartProvider>
+        <InterfaceControlsProvider>
+          <App />
+        </InterfaceControlsProvider>
+      </CartProvider>
     </LanguageProvider>
   </StrictMode>,
 )
