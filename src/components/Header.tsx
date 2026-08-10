@@ -28,69 +28,80 @@ export function Header() {
     setOpen((value) => !value)
   }
 
+  const stateClass = `${open ? 'is-open' : ''} ${modalClose ? 'is-lightbox' : ''}`
+
   return (
-    <header className={`header ${open ? 'is-open' : ''} ${modalClose ? 'is-lightbox' : ''}`}>
-      <a className="header__brand" href="#ouverture" aria-label={t.header.backToOpening}>
-        <Logo compact />
-      </a>
-      <button
-        className="menu-toggle"
-        type="button"
-        aria-label={open ? t.common.closeMenu : t.common.openMenu}
-        aria-expanded={open}
-        aria-controls="main-navigation"
-        data-cursor={open ? t.common.close : t.common.open}
-        onClick={toggleMenu}
-      >
-        <span>{open ? t.common.close : t.common.menu}</span>
-        <i aria-hidden="true" />
-      </button>
-      <div className="header__controls">
-        <button
-          className="account-toggle"
-          type="button"
-          aria-label={user ? t.account.openAccount : t.account.signIn}
-          title={user ? t.account.account : t.account.signIn}
-          onClick={openAccount}
-        >
-          <span>{user ? t.account.account : t.account.signIn}</span>
-        </button>
-        <button
-          className="cart-toggle"
-          type="button"
-          aria-label={t.cart.openCart}
-          title={t.cart.openCart}
-          onClick={openCart}
-        >
-          <span>{t.cart.title}</span>
-          {itemCount > 0 && <i aria-hidden="true">{itemCount}</i>}
-        </button>
-        <button
-          className="language-toggle"
-          type="button"
-          aria-label={t.switchLanguage}
-          title={t.switchLanguage}
-          onClick={toggleLanguage}
-        >
-          <span>{t.languageCode}</span>
-        </button>
-        {modalClose && (
-          <button className="header__modal-close" type="button" onClick={modalClose} aria-label={t.common.close}>
-            <span>{t.common.close}</span>
-            <i aria-hidden="true">×</i>
+    <>
+      {/* True DOM sibling of <header>, not a child: a mix-blend-mode element (.header__bar,
+          below) sharing a parent with a backdrop-filter element blocks that filter from
+          sampling the real page — confirmed by testing in the browser — even when the
+          blend-mode element is invisible. Living outside .header entirely sidesteps that. */}
+      <div className={`header__veil ${stateClass}`} aria-hidden="true" />
+      <header className={`header ${stateClass}`}>
+        <div className="header__bar">
+          <a className="header__brand" href="#ouverture" aria-label={t.header.backToOpening}>
+            <Logo compact />
+          </a>
+          <button
+            className="menu-toggle"
+            type="button"
+            aria-label={open ? t.common.closeMenu : t.common.openMenu}
+            aria-expanded={open}
+            aria-controls="main-navigation"
+            data-cursor={open ? t.common.close : t.common.open}
+            onClick={toggleMenu}
+          >
+            <span>{open ? t.common.close : t.common.menu}</span>
+            <i aria-hidden="true" />
           </button>
-        )}
-      </div>
-      <nav id="main-navigation" className="nav" aria-label={t.header.navigation}>
-        <ol>
-          {site.navigation.map((item, index) => (
-            <li key={item.href}>
-              <span>0{index + 1}</span>
-              <a href={item.href} data-cursor={t.common.go} onClick={() => setOpen(false)}>{t.header.navigationItems[index]}</a>
-            </li>
-          ))}
-        </ol>
-      </nav>
-    </header>
+          <div className="header__controls">
+            <button
+              className="account-toggle"
+              type="button"
+              aria-label={user ? t.account.openAccount : t.account.signIn}
+              title={user ? t.account.account : t.account.signIn}
+              onClick={openAccount}
+            >
+              <span>{user ? t.account.account : t.account.signIn}</span>
+            </button>
+            <button
+              className="cart-toggle"
+              type="button"
+              aria-label={t.cart.openCart}
+              title={t.cart.openCart}
+              onClick={openCart}
+            >
+              <span>{t.cart.title}</span>
+              {itemCount > 0 && <i aria-hidden="true">{itemCount}</i>}
+            </button>
+            <button
+              className="language-toggle"
+              type="button"
+              aria-label={t.switchLanguage}
+              title={t.switchLanguage}
+              onClick={toggleLanguage}
+            >
+              <span>{t.languageCode}</span>
+            </button>
+            {modalClose && (
+              <button className="header__modal-close" type="button" onClick={modalClose} aria-label={t.common.close}>
+                <span>{t.common.close}</span>
+                <i aria-hidden="true">×</i>
+              </button>
+            )}
+          </div>
+        </div>
+        <nav id="main-navigation" className="nav" aria-label={t.header.navigation}>
+          <ol>
+            {site.navigation.map((item, index) => (
+              <li key={item.href}>
+                <span>0{index + 1}</span>
+                <a href={item.href} data-cursor={t.common.go} onClick={() => setOpen(false)}>{t.header.navigationItems[index]}</a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      </header>
+    </>
   )
 }

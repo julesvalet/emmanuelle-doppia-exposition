@@ -45,15 +45,19 @@ button { font: inherit; }
 .brand--compact { width: 3.3rem; height: 2.15rem; }
 .brand--compact img { height: 100%; object-fit: cover; object-position: center; }
 
-.header { position: fixed; z-index: 100; top: 0; right: 0; left: 0; display: flex; align-items: center; justify-content: space-between; height: calc(5.5rem + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) max(var(--pad), env(safe-area-inset-right, 0px)) 0 max(var(--pad), env(safe-area-inset-left, 0px)); color: var(--paper); mix-blend-mode: difference; transition: padding .5s cubic-bezier(.2,.75,.2,1); }
-/* The blur lives on a pseudo-element, not on .header itself: backdrop-filter and
-   mix-blend-mode on the same box fight over the same compositing step, and the header's
-   auto-contrast text would blend against its own blurred backdrop instead of the real page.
-   Kept on a plain, unblended layer behind the content, the difference blend above still reads
-   the true page pixels. */
-.header::before { content: ''; position: absolute; z-index: -1; inset: 0; background: rgba(17,18,16,.12); backdrop-filter: blur(16px) saturate(1.15); -webkit-backdrop-filter: blur(16px) saturate(1.15); pointer-events: none; }
-.header.is-open { mix-blend-mode: normal; }
-.header.is-lightbox { z-index: 800; mix-blend-mode: normal; }
+.header, .header__veil { position: fixed; z-index: 100; top: 0; right: 0; left: 0; height: calc(5.5rem + env(safe-area-inset-top, 0px)); }
+.header { padding: env(safe-area-inset-top, 0px) max(var(--pad), env(safe-area-inset-right, 0px)) 0 max(var(--pad), env(safe-area-inset-left, 0px)); color: var(--paper); transition: padding .5s cubic-bezier(.2,.75,.2,1); }
+/* .header__veil is a DOM sibling of <header>, not a child of it — confirmed in-browser that a
+   mix-blend-mode element (.header__bar, below) sharing a stacking-context parent with a
+   backdrop-filter element blocks that filter from sampling the real page (it silently renders
+   nothing), even while the blend-mode element is invisible. Kept as a fully separate fixed
+   layer, the blur applies correctly; .header__bar then blends against that blurred result, so
+   the auto-contrast text still reads clearly over it. */
+.header__veil { background: rgba(17,18,16,.12); backdrop-filter: blur(16px) saturate(1.15); -webkit-backdrop-filter: blur(16px) saturate(1.15); pointer-events: none; }
+.header__veil.is-lightbox { z-index: 800; }
+.header__bar { position: relative; display: flex; align-items: center; justify-content: space-between; height: 100%; mix-blend-mode: difference; }
+.header.is-open .header__bar, .header.is-lightbox .header__bar { mix-blend-mode: normal; }
+.header.is-lightbox { z-index: 800; }
 .header__brand { display: block; transition: opacity .25s; }
 .header.is-lightbox .header__brand { opacity: 0; pointer-events: none; }
 .menu-toggle { position: absolute; top: 50%; left: 50%; display: flex; align-items: center; justify-content: center; gap: .7rem; height: 2.75rem; padding: 0 .65rem; border: 0; color: inherit; background: none; font-size: .56rem; font-weight: 500; line-height: 1; letter-spacing: .12em; text-transform: uppercase; transform: translate(-50%, -50%); }
@@ -453,7 +457,7 @@ button { font: inherit; }
   .cursor { display: none; }
   .chapter-rail { display: none; }
   .ambient-grain { opacity: .035; }
-  .header { height: calc(4.5rem + env(safe-area-inset-top, 0px)); }
+  .header, .header__veil { height: calc(4.5rem + env(safe-area-inset-top, 0px)); }
   /* True centering only holds up when there's room either side of it: on a narrow phone the
      right-hand cluster (Compte/Panier/FR) is wider than the gap a dead-centered menu would
      leave, so it overlaps. Letting it rejoin the flex flow keeps the three groups
