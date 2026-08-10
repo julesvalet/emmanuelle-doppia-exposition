@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
+import { Analytics } from '@vercel/analytics/react'
 import { site } from './data/site'
 import { catalogueArtworks } from './data/journey'
 import { useLanguage } from './i18n'
@@ -192,6 +193,7 @@ function App() {
         <span>© {site.year} {site.artist}</span>
         <a href="#ouverture" data-cursor={t.footer.cursorTop}>{t.footer.backToTop}</a>
       </footer>
+      <Analytics />
     </div>
   )
 }
