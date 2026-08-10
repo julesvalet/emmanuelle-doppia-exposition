@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
+import { Analytics } from '@vercel/analytics/react'
 import { site } from './data/site'
 import { catalogueArtworks } from './data/journey'
 import { useLanguage } from './i18n'
@@ -110,6 +111,7 @@ function App() {
     <div ref={app}>
       <Cursor />
       <ParticleCamera />
+      <Analytics />
       <div className="ambient-grain" aria-hidden="true" />
       <div className="scroll-progress" aria-hidden="true"><i className="scroll-progress__line" /></div>
       <aside className="chapter-rail" aria-hidden="true"><span>Index</span><div><span ref={chapter}>01</span><i>/</i><span>04</span></div></aside>
