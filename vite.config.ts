@@ -2,9 +2,15 @@ import { closeSync, openSync, readSync, readdirSync } from 'node:fs'
 import { resolve, relative, extname } from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import sharp from 'sharp'
 
 const ASSETS_DIR = resolve(process.cwd(), 'Assets')
 const MEDIA_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif', '.mp4', '.webm'])
+// Grid thumbnails and mobile views only ever display a few hundred CSS pixels — 1600px on the
+// longest edge stays sharp even on a 3x-DPR phone while cutting the ~15-20MB source JPEGs down
+// to a few hundred KB. The untouched original is still served as-is for the desktop lightbox.
+const PREVIEW_MAX_DIMENSION = 1600
+const PREVIEW_QUALITY = 75
 const EXCLUDED_FILES = new Set([
   'ED Emmanuelle Doppia Logo Blanc.png',
   'favicon-16x16.png',
@@ -113,12 +119,17 @@ function mediaOrder(first: string, second: string) {
 }
 
 function galleryAssetsPlugin(): Plugin {
+  let isBuild = false
+
   return {
     name: 'gallery-assets',
+    configResolved(config) {
+      isBuild = config.command === 'build'
+    },
     resolveId(id) {
       return id === VIRTUAL_ID ? RESOLVED_ID : undefined
     },
-    load(id) {
+    async load(id) {
       if (id !== RESOLVED_ID) return undefined
       const files = walk(ASSETS_DIR)
         .filter((file) => MEDIA_EXTENSIONS.has(extname(file).toLowerCase()))
@@ -130,6 +141,7 @@ function galleryAssetsPlugin(): Plugin {
           const type = ['.mp4', '.webm'].includes(extension) ? 'video' : 'image'
           const dimensions = ['.jpg', '.jpeg'].includes(extension) ? readJpegInfo(file) : { width: 0, height: 0, orientation: 'landscape' as const }
           return {
+            file,
             src: path.split('/').map(encodeURIComponent).join('/'),
             path,
             folder: path.split('/')[0],
@@ -137,10 +149,44 @@ function galleryAssetsPlugin(): Plugin {
             ...dimensions,
           }
         })
-      return `export default ${JSON.stringify(files)}.map((item) => ({
+
+      // Preview derivatives are only generated for production builds — dev keeps mobileSrc
+      // equal to the original so `npm run dev` stays fast to start. The final hashed filename
+      // of an emitted asset isn't known during `load()`, so each preview is referenced through
+      // Rollup's `import.meta.ROLLUP_FILE_URL_<id>` placeholder, which it substitutes with the
+      // real URL once the bundle is rendered.
+      const previewReferenceIds = new Map<string, string>()
+      if (isBuild) {
+        await Promise.all(files.filter((item) => item.type === 'image').map(async (item) => {
+          const buffer = await sharp(item.file)
+            .rotate()
+            .resize({ width: PREVIEW_MAX_DIMENSION, height: PREVIEW_MAX_DIMENSION, fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: PREVIEW_QUALITY })
+            .toBuffer()
+          const flatName = item.path.replace(/\.[^./]+$/, '').replaceAll('/', '-')
+          const referenceId = this.emitFile({ type: 'asset', name: `${flatName}.preview.webp`, source: buffer })
+          previewReferenceIds.set(item.path, referenceId)
+        }))
+      }
+
+      const output = files.map((item) => ({
+        src: item.src,
+        path: item.path,
+        folder: item.folder,
+        type: item.type,
+        width: item.width,
+        height: item.height,
+        orientation: item.orientation,
+      }))
+      const previewUrlEntries = [...previewReferenceIds]
+        .map(([path, referenceId]) => `${JSON.stringify(path)}: import.meta.ROLLUP_FILE_URL_${referenceId}`)
+        .join(',\n')
+
+      return `const previewUrls = {${previewUrlEntries}}
+      export default ${JSON.stringify(output)}.map((item) => ({
         ...item,
         src: import.meta.env.BASE_URL + item.src,
-        mobileSrc: import.meta.env.BASE_URL + item.src,
+        mobileSrc: previewUrls[item.path] || (import.meta.env.BASE_URL + item.src),
       }))`
     },
     handleHotUpdate({ file, server }) {

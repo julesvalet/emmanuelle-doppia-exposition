@@ -153,18 +153,15 @@ export function JourneyGallery({ location, onClose }: Props) {
                   ) : failedIndexes.has(index) ? (
                     <span className="journey-photo-card__error" role="status">{t.common.unavailable}</span>
                   ) : (
-                    <picture>
-                      <source media="(max-width: 760px)" srcSet={artwork.mobileSrc} />
-                      <img
-                        src={artwork.src}
-                        alt={`${artwork.title}, ${t.accessibility.artworkAlt} ${location.name} ${t.accessibility.byArtist}.`}
-                        width={artwork.width || undefined}
-                        height={artwork.height || undefined}
-                        loading="lazy"
-                        decoding="async"
-                        onError={() => setFailedIndexes((indexes) => new Set(indexes).add(index))}
-                      />
-                    </picture>
+                    <img
+                      src={artwork.mobileSrc}
+                      alt={`${artwork.title}, ${t.accessibility.artworkAlt} ${location.name} ${t.accessibility.byArtist}.`}
+                      width={artwork.width || undefined}
+                      height={artwork.height || undefined}
+                      loading="lazy"
+                      decoding="async"
+                      onError={() => setFailedIndexes((indexes) => new Set(indexes).add(index))}
+                    />
                   )}
                 </span>
                 <span className="journey-photo-card__caption">

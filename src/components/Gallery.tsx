@@ -37,18 +37,15 @@ export function Gallery() {
             ) : (
               <button className="gallery-card reveal" key={item.id} data-cursor={t.common.view} onClick={() => setActiveIndex(index)} aria-label={`${t.common.open} ${item.title}`}>
                 <span className="gallery-card__media">
-                  <picture>
-                    <source media="(max-width: 760px)" srcSet={item.mobileSrc} />
-                    <img
-                      className={`is-${item.orientation}`}
-                      src={item.src}
-                      alt={`${item.title}, ${t.accessibility.artworkAlt} ${item.locationName} ${t.accessibility.byArtist}.`}
-                      width={item.width || undefined}
-                      height={item.height || undefined}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </picture>
+                  <img
+                    className={`is-${item.orientation}`}
+                    src={item.mobileSrc}
+                    alt={`${item.title}, ${t.accessibility.artworkAlt} ${item.locationName} ${t.accessibility.byArtist}.`}
+                    width={item.width || undefined}
+                    height={item.height || undefined}
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </span>
                 <span className="gallery-card__caption"><i>{String(item.order).padStart(2, '0')}</i><span>{item.title}</span></span>
               </button>
