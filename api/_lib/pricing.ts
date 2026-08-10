@@ -1,4 +1,4 @@
-import { catalogue } from '../../src/data/catalogue'
+import { catalogue } from '../../src/data/catalogue.js'
 
 export type CartLineInput = {
   artworkNumber: number

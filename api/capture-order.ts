@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getAccessToken, paypalFetch, PaypalApiError } from './_lib/paypal'
+import { getAccessToken, paypalFetch, PaypalApiError } from './_lib/paypal.js'
 
 type CaptureOrderResponse = {
   id: string

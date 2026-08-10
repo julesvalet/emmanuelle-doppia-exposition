@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getAccessToken, paypalFetch, PaypalApiError } from './_lib/paypal'
-import { priceCartLines, PricingError } from './_lib/pricing'
+import { getAccessToken, paypalFetch, PaypalApiError } from './_lib/paypal.js'
+import { priceCartLines, PricingError } from './_lib/pricing.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
