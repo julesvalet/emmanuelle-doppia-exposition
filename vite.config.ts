@@ -5,7 +5,16 @@ import react from '@vitejs/plugin-react'
 
 const ASSETS_DIR = resolve(process.cwd(), 'Assets')
 const MEDIA_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif', '.mp4', '.webm'])
-const EXCLUDED_FILES = new Set(['ED Emmanuelle Doppia Logo Blanc.png'])
+const EXCLUDED_FILES = new Set([
+  'ED Emmanuelle Doppia Logo Blanc.png',
+  'favicon-16x16.png',
+  'favicon-32x32.png',
+  'favicon-48x48.png',
+  'favicon-ed.png',
+  'apple-touch-icon.png',
+  'android-chrome-192x192.png',
+  'android-chrome-512x512.png',
+])
 const VIRTUAL_ID = 'virtual:gallery-assets'
 const RESOLVED_ID = `\0${VIRTUAL_ID}`
 
