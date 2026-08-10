@@ -167,7 +167,7 @@ const catalogueEntries: CatalogueEntryBase[] = [
     descriptionEn: 'Mirror in Black & White / Walpa Gorge / Kata-Tjuta Domes / Red Center\nAustralian Outback / Northern Territory',
     descriptionFr: 'Miroir en Noir et Blanc / Gorges de Walpa / Dômes de Kata-Tjuta\nCentre Rouge / Outback Australien / Territoire du Nord',
   },
-  { number: 10, file: 'Uluru-Kata Tjuta/Kata-Tjuta-6.jpg', title: 'Mirror in Black & White / Walpa Gorge', location: 'uluru-kata-tjuta' },
+  { number: 10, file: 'Uluru-Kata Tjuta/Kata-Tjuta-6.jpg', title: 'Mirror / Walpa Gorge', location: 'uluru-kata-tjuta' },
   {
     number: 11, file: 'Uluru-Kata Tjuta/Uluru -7.jpg', title: 'Fountain', location: 'uluru-kata-tjuta',
     descriptionEn: 'Fountain / Kata-Tjuta Domes / Red Center / Australian Outback / Northern Territory',
