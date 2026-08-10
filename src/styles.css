@@ -116,7 +116,7 @@ button { font: inherit; }
 .hero__line { display: block; width: 100%; overflow: visible; padding-block: .035em .075em; }
 .hero__line > span { display: block; width: fit-content; max-width: 100%; padding-inline: .025em .1em; transform-origin: left bottom; }
 .hero__line--offset { padding-left: clamp(3rem, 18vw, 18rem); }
-.hero em, .gallery em, .about em, .contact em { color: var(--mineral); font-weight: 400; }
+.hero em, .gallery em, .contact em { color: var(--mineral); font-weight: 400; }
 /* Offset by --hero-run so the scroll cue stays at the foot of the first viewport rather than
    sinking to the bottom of the taller section, where it would start out below the fold. */
 .hero__mark { position: absolute; right: var(--pad); bottom: calc(var(--hero-run) + 2rem); display: flex; align-items: center; gap: .7rem; font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; writing-mode: vertical-rl; }
@@ -261,7 +261,7 @@ button { font: inherit; }
 .gallery::before { content: 'ARCHIVE / 001'; position: absolute; top: 50%; left: .75rem; font-size: .48rem; letter-spacing: .16em; opacity: .4; writing-mode: vertical-rl; }
 .gallery .section-kicker { border-color: rgba(255,255,255,.25); }
 .gallery .section-kicker span:first-child { color: var(--mineral); }
-.gallery__title, .about h2, .contact h2 { width: 100%; max-width: min(100%, 100rem); margin: 11vh 0 0; padding: .04em .12em .1em .04em; font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(4.5rem, 9.75vw, 10.5rem); font-weight: 400; line-height: .88; letter-spacing: -.05em; overflow: visible; overflow-wrap: normal; word-break: normal; }
+.gallery__title, .contact h2 { width: 100%; max-width: min(100%, 100rem); margin: 11vh 0 0; padding: .04em .12em .1em .04em; font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(4.5rem, 9.75vw, 10.5rem); font-weight: 400; line-height: .88; letter-spacing: -.05em; overflow: visible; overflow-wrap: normal; word-break: normal; }
 /* Longer editorial sentence in place of the original two-word title: same family/weight, scaled down to a size that still reads as a heading. */
 .gallery__title { max-width: 46rem; font-size: clamp(2.15rem, 4.1vw, 3.4rem); line-height: 1.22; letter-spacing: -.015em; }
 .empty-stage { position: relative; display: grid; place-items: center; min-height: 68vh; margin-top: 3rem; overflow: hidden; border: 1px solid rgba(255,255,255,.18); transition: border-color .6s; }
@@ -401,14 +401,6 @@ button { font: inherit; }
   .cart-panel { width: 100vw; }
 }
 
-.about { position: relative; min-height: 110vh; padding: 8rem var(--pad); overflow: hidden; }
-.about__layout { position: relative; z-index: 2; }
-.about h2 { margin-top: 14vh; }
-.about__copy { width: min(34rem, 45%); margin: 8rem 8% 0 auto; }
-.about__copy p { font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(1.6rem, 2.6vw, 2.7rem); line-height: 1.15; }
-.about__copy span { display: block; margin-top: 3rem; font-size: .62rem; line-height: 1.7; letter-spacing: .12em; text-transform: uppercase; }
-.about__symbol { position: absolute; right: -12vw; bottom: -18vw; width: 56vw; opacity: .045; filter: invert(1); transform: rotate(-8deg); will-change: transform; }
-
 .contact { min-height: 95vh; padding: 8rem var(--pad) 4rem; color: var(--paper); background: var(--ink); }
 .contact .section-kicker { border-color: rgba(255,255,255,.24); }
 .contact h2 { margin-top: 15vh; }
@@ -504,16 +496,14 @@ button { font: inherit; }
   .journey-viewer footer > span:first-child { display: none; }
   .journey-viewer footer nav { grid-column: 1; grid-row: 1; justify-content: space-between; }
   .journey-viewer footer > span:last-child { grid-column: 2; grid-row: 1; }
-  .gallery, .about, .contact { padding-block: 6rem; }
+  .gallery, .contact { padding-block: 6rem; }
   .gallery::before { display: none; }
-  .gallery__title, .about h2, .contact h2 { margin-top: 6rem; padding-inline: .03em .1em; font-size: clamp(4rem, 19vw, 6.5rem); line-height: .9; }
+  .gallery__title, .contact h2 { margin-top: 6rem; padding-inline: .03em .1em; font-size: clamp(4rem, 19vw, 6.5rem); line-height: .9; }
   .empty-stage { min-height: 55vh; margin-inline: calc(var(--pad) * -1); border-inline: 0; }
   .empty-stage p { font-size: 1.45rem; }
   .gallery-grid { display: block; margin-top: 6rem; }
   .gallery-card { display: block; width: 100%; margin-bottom: 5rem; }
   .gallery-grid > .gallery-card:last-child:nth-child(odd) { width: 100%; }
-  .about { min-height: 100vh; }
-  .about__copy { width: 90%; margin: 6rem 0 0 auto; }
   .contact p { margin-top: 5rem; }
   .footer { grid-template-columns: 1fr 1fr; gap: 2rem; }
   .footer > span { display: none; }
@@ -536,7 +526,7 @@ button { font: inherit; }
 @media (min-width: 761px) and (max-width: 1100px) {
   .hero h1 { font-size: clamp(5.5rem, 11.4vw, 7.8rem); line-height: .87; }
   .hero__line--offset { padding-left: clamp(5rem, 16vw, 10rem); }
-  .gallery__title, .about h2, .contact h2 { font-size: clamp(5rem, 9.5vw, 7rem); line-height: .9; }
+  .gallery__title, .contact h2 { font-size: clamp(5rem, 9.5vw, 7rem); line-height: .9; }
   .gallery__title { font-size: clamp(1.9rem, 3.6vw, 2.9rem); }
   .lightbox { padding-inline: 2rem; }
   .lightbox__layout { grid-template-columns: minmax(0, 1.6fr) minmax(16rem, .8fr); gap: 1.5rem; width: 96vw; }
@@ -547,7 +537,7 @@ button { font: inherit; }
   :root { --pad: clamp(1rem, 5vw, 1.35rem); }
   .hero h1 { font-size: clamp(4rem, 20vw, 5.35rem); line-height: .88; }
   .hero__line--offset { padding-left: clamp(1rem, 8vw, 2rem); }
-  .gallery__title, .about h2, .contact h2 { font-size: clamp(3.8rem, 18vw, 4.8rem); line-height: .92; }
+  .gallery__title, .contact h2 { font-size: clamp(3.8rem, 18vw, 4.8rem); line-height: .92; }
   .gallery__title { font-size: clamp(1.7rem, 6.6vw, 2.15rem); }
 }
 
@@ -581,7 +571,7 @@ button { font: inherit; }
 
 @media (min-width: 1800px) {
   .hero h1 { font-size: clamp(11rem, 10.8vw, 13rem); line-height: .86; }
-  .gallery__title, .about h2, .contact h2 { font-size: clamp(9.5rem, 8.7vw, 11rem); }
+  .gallery__title, .contact h2 { font-size: clamp(9.5rem, 8.7vw, 11rem); }
   .gallery__title { font-size: clamp(3.4rem, 3vw, 4.1rem); }
 }
 

@@ -31,7 +31,7 @@ export const translations = {
     header: {
       backToOpening: 'Retour à l’ouverture',
       navigation: 'Navigation principale',
-      navigationItems: ['Ouverture', 'Voyage', 'Exposition', 'Démarche', 'Contact'],
+      navigationItems: ['Ouverture', 'Voyage', 'Exposition', 'Contact'],
     },
     hero: {
       exhibition: 'Exposition photographique',
@@ -91,14 +91,6 @@ export const translations = {
       openingSoon: 'Ouverture prochaine',
       worksSoon: 'Les œuvres prendront place ici.',
       emptyLabel: 'La galerie ouvrira prochainement',
-    },
-    about: {
-      approach: 'Démarche',
-      about: 'À propos',
-      titleFirst: 'Regarder,',
-      titleSecond: 'vraiment.',
-      text: 'Cette exposition est pensée comme un espace de respiration. Les photographies y trouveront leur rythme, sans décor superflu, dans une scénographie numérique au service du regard.',
-      photographer: 'Photographe',
     },
     contact: {
       headingFirst: 'Entrer',
@@ -182,7 +174,7 @@ export const translations = {
     header: {
       backToOpening: 'Back to the opening',
       navigation: 'Main navigation',
-      navigationItems: ['Opening', 'Journey', 'Exhibition', 'Approach', 'Contact'],
+      navigationItems: ['Opening', 'Journey', 'Exhibition', 'Contact'],
     },
     hero: {
       exhibition: 'Photography exhibition',
@@ -242,14 +234,6 @@ export const translations = {
       openingSoon: 'Opening soon',
       worksSoon: 'The artworks will take their place here.',
       emptyLabel: 'The gallery will open soon',
-    },
-    about: {
-      approach: 'Approach',
-      about: 'About',
-      titleFirst: 'Looking,',
-      titleSecond: 'truly.',
-      text: 'This exhibition is conceived as a space to breathe. The photographs find their rhythm without superfluous decoration, in a digital scenography devoted to the gaze.',
-      photographer: 'Photographer',
     },
     contact: {
       headingFirst: 'Get',

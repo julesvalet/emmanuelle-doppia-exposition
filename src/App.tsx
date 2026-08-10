@@ -85,8 +85,6 @@ function App() {
       gsap.to('.hero__line:nth-child(2) span', { xPercent: 4, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: heroScrolled(1), scrub: true } })
       gsap.to('.marquee__track', { xPercent: -25, ease: 'none', scrollTrigger: { trigger: '.marquee', start: 'top bottom', end: 'bottom top', scrub: 1 } })
       gsap.to('.empty-stage__orbit', { rotate: 210, scale: 0.78, ease: 'none', scrollTrigger: { trigger: '.empty-stage', start: 'top bottom', end: 'bottom top', scrub: 1 } })
-      gsap.to('.about__symbol', { rotate: 4, yPercent: -15, ease: 'none', scrollTrigger: { trigger: '.about', start: 'top bottom', end: 'bottom top', scrub: 1 } })
-
       gsap.utils.toArray<HTMLElement>('[data-chapter]').forEach((section, index) => {
         ScrollTrigger.create({
           trigger: section,
@@ -113,7 +111,7 @@ function App() {
       <ParticleCamera />
       <div className="ambient-grain" aria-hidden="true" />
       <div className="scroll-progress" aria-hidden="true"><i className="scroll-progress__line" /></div>
-      <aside className="chapter-rail" aria-hidden="true"><span>Index</span><div><span ref={chapter}>01</span><i>/</i><span>05</span></div></aside>
+      <aside className="chapter-rail" aria-hidden="true"><span>Index</span><div><span ref={chapter}>01</span><i>/</i><span>04</span></div></aside>
       <Header />
       <CartPanel />
       <main id="main">
@@ -177,21 +175,12 @@ function App() {
 
         <div className="marquee" aria-hidden="true"><div className="marquee__track">{t.intro.marquee}</div></div>
 
-        <AustraliaEarthZoom />
+        <div data-chapter><AustraliaEarthZoom /></div>
 
         <div data-chapter><Gallery /></div>
 
-        <section className="about" id="demarche" aria-labelledby="about-title" data-chapter>
-          <div className="section-kicker reveal"><span>04</span><span>{t.about.approach}</span><span>{t.about.about}</span></div>
-          <div className="about__layout">
-            <h2 className="reveal" id="about-title">{t.about.titleFirst}<br /><em>{t.about.titleSecond}</em></h2>
-            <div className="about__copy reveal"><p>{t.about.text}</p><span>{site.artist}<br />{t.about.photographer}</span></div>
-          </div>
-          <div className="about__symbol" aria-hidden="true"><Logo /></div>
-        </section>
-
         <section className="contact" id="contact" aria-labelledby="contact-title" data-chapter>
-          <div className="section-kicker reveal"><span>05</span><span>Contact</span><span>{site.location}</span></div>
+          <div className="section-kicker reveal"><span>04</span><span>Contact</span><span>{site.location}</span></div>
           <h2 className="reveal" id="contact-title">{t.contact.headingFirst}<br /><em>{t.contact.headingSecond}</em></h2>
           <p className="reveal">{t.contact.note}</p>
         </section>
