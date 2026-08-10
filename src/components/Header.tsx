@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { site } from '../data/site'
+import { useAuth } from '../auth'
 import { useCart } from '../cart'
 import { useLanguage } from '../i18n'
 import { useInterfaceControls } from '../interfaceControls'
@@ -10,6 +11,7 @@ export function Header() {
   const { t, toggleLanguage } = useLanguage()
   const { modalClose } = useInterfaceControls()
   const { itemCount, openCart } = useCart()
+  const { user, openAccount } = useAuth()
 
   useEffect(() => {
     const close = () => setOpen(false)
@@ -52,6 +54,15 @@ export function Header() {
           onClick={toggleLanguage}
         >
           <span>{t.languageCode}</span>
+        </button>
+        <button
+          className="account-toggle"
+          type="button"
+          aria-label={user ? t.account.openAccount : t.account.signIn}
+          title={user ? t.account.account : t.account.signIn}
+          onClick={openAccount}
+        >
+          <span>{user ? t.account.account : t.account.signIn}</span>
         </button>
         <button
           className="cart-toggle"

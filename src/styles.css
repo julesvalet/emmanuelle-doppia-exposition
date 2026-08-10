@@ -401,6 +401,20 @@ button { font: inherit; }
   .cart-panel { width: 100vw; }
 }
 
+.account-panel__form { display: grid; gap: 1.25rem; }
+.account-panel__field { display: grid; gap: .5rem; }
+.account-panel__field label { color: rgba(168,181,162,.75); font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; }
+.account-panel__field input { padding: .8rem .9rem; border: 1px solid rgba(168,181,162,.3); color: var(--paper); background: rgba(238,236,230,.04); font-size: .85rem; letter-spacing: .02em; transition: border-color .25s; }
+.account-panel__field input:focus-visible { border-color: var(--mineral); outline: none; }
+.account-panel__links { display: flex; justify-content: flex-end; margin-top: -.5rem; }
+.account-panel__link { padding: 0; border: 0; color: rgba(168,181,162,.85); background: none; font-size: .62rem; letter-spacing: .04em; text-decoration: underline; text-underline-offset: .2em; cursor: pointer; }
+.account-panel__link:hover { color: var(--paper); }
+.account-panel__switch { margin: 0; color: rgba(168,181,162,.75); font-size: .68rem; letter-spacing: .02em; text-align: center; }
+.account-panel__profile { display: grid; gap: 1.5rem; }
+.account-panel__meta { display: flex; flex-direction: column; gap: .3rem; margin: 0; padding: 1rem; border: 1px solid rgba(168,181,162,.28); }
+.account-panel__meta span { color: rgba(168,181,162,.75); font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; }
+.account-panel__meta strong { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.15rem; font-weight: 400; letter-spacing: .02em; overflow-wrap: anywhere; }
+
 .contact { min-height: 95vh; padding: 8rem var(--pad) 4rem; color: var(--paper); background: var(--ink); }
 .contact .section-kicker { border-color: rgba(255,255,255,.24); }
 .contact h2 { margin-top: 15vh; }
@@ -535,6 +549,7 @@ button { font: inherit; }
 
 @media (max-width: 430px) {
   :root { --pad: clamp(1rem, 5vw, 1.35rem); }
+  .header__controls > button { padding-inline: .35rem; font-size: .54rem; letter-spacing: .08em; }
   .hero h1 { font-size: clamp(4rem, 20vw, 5.35rem); line-height: .88; }
   .hero__line--offset { padding-left: clamp(1rem, 8vw, 2rem); }
   .gallery__title, .contact h2 { font-size: clamp(3.8rem, 18vw, 4.8rem); line-height: .92; }

@@ -10,15 +10,18 @@ import App from './App'
 import { LanguageProvider } from './i18n'
 import { InterfaceControlsProvider } from './interfaceControls'
 import { CartProvider } from './cart'
+import { AuthProvider } from './auth'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <LanguageProvider>
-      <CartProvider>
-        <InterfaceControlsProvider>
-          <App />
-        </InterfaceControlsProvider>
-      </CartProvider>
+      <AuthProvider>
+        <CartProvider>
+          <InterfaceControlsProvider>
+            <App />
+          </InterfaceControlsProvider>
+        </CartProvider>
+      </AuthProvider>
     </LanguageProvider>
   </StrictMode>,
 )

@@ -5,6 +5,7 @@ import Lenis from 'lenis'
 import { site } from './data/site'
 import { catalogueArtworks } from './data/journey'
 import { useLanguage } from './i18n'
+import { AccountPanel } from './components/AccountPanel'
 import { CartPanel } from './components/CartPanel'
 import { Cursor } from './components/Cursor'
 import { Gallery } from './components/Gallery'
@@ -113,6 +114,7 @@ function App() {
       <div className="scroll-progress" aria-hidden="true"><i className="scroll-progress__line" /></div>
       <aside className="chapter-rail" aria-hidden="true"><span>Index</span><div><span ref={chapter}>01</span><i>/</i><span>04</span></div></aside>
       <Header />
+      <AccountPanel />
       <CartPanel />
       <main id="main">
         <section className="poster" aria-label={t.poster.label}>
