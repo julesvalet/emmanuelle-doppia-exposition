@@ -10,11 +10,14 @@ export function Cursor() {
     const y = gsap.quickTo(el, 'y', { duration: 0.35, ease: 'power3' })
     const move = (event: MouseEvent) => { x(event.clientX); y(event.clientY) }
     const hover = (event: MouseEvent) => {
-      const target = (event.target as Element).closest<HTMLElement>('[data-cursor]')
-      const zoomTarget = (event.target as Element).closest<HTMLElement>('[data-cursor-zoom]')
+      const origin = event.target as Element
+      const target = origin.closest<HTMLElement>('[data-cursor]')
+      const zoomTarget = origin.closest<HTMLElement>('[data-cursor-zoom]')
+      const clickable = origin.closest('a, button, input, textarea, select, label, [role="button"]')
       const label = el.querySelector('span')
       el.classList.toggle('is-active', Boolean(target))
       el.classList.toggle('is-zoom', Boolean(zoomTarget))
+      el.classList.toggle('is-hover', Boolean(clickable) && !target)
       if (label) label.textContent = target?.dataset.cursor ?? ''
     }
     addEventListener('mousemove', move)

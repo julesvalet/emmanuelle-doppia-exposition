@@ -16,7 +16,10 @@ html { max-width: 100%; overflow-x: clip; scroll-behavior: smooth; }
 body { width: 100%; min-width: 320px; max-width: 100%; margin: 0; overflow-x: clip; }
 main, section, main > [data-chapter] { min-width: 0; max-width: 100%; }
 h1, h2, p { max-width: 100%; }
-* { cursor: none; }
+/* !important: components (inputs, disabled buttons, form links…) routinely set their own
+   `cursor` for semantics/fallback. The custom cursor must win everywhere on a fine pointer, so
+   this has to out-rank any of those without having to chase every future one. */
+* { cursor: none !important; }
 button, a { color: inherit; }
 a { text-decoration: none; }
 button { font: inherit; }
@@ -42,17 +45,24 @@ button { font: inherit; }
 .brand--compact { width: 3.3rem; height: 2.15rem; }
 .brand--compact img { height: 100%; object-fit: cover; object-position: center; }
 
-.header { position: fixed; z-index: 100; top: 0; right: 0; left: 0; display: flex; align-items: center; height: calc(5.5rem + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) max(var(--pad), env(safe-area-inset-right, 0px)) 0 max(var(--pad), env(safe-area-inset-left, 0px)); color: var(--paper); mix-blend-mode: difference; transition: padding .5s cubic-bezier(.2,.75,.2,1); }
+.header { position: fixed; z-index: 100; top: 0; right: 0; left: 0; display: flex; align-items: center; justify-content: space-between; height: calc(5.5rem + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) max(var(--pad), env(safe-area-inset-right, 0px)) 0 max(var(--pad), env(safe-area-inset-left, 0px)); color: var(--paper); mix-blend-mode: difference; transition: padding .5s cubic-bezier(.2,.75,.2,1); }
+/* The blur lives on a pseudo-element, not on .header itself: backdrop-filter and
+   mix-blend-mode on the same box fight over the same compositing step, and the header's
+   auto-contrast text would blend against its own blurred backdrop instead of the real page.
+   Kept on a plain, unblended layer behind the content, the difference blend above still reads
+   the true page pixels. */
+.header::before { content: ''; position: absolute; z-index: -1; inset: 0; background: rgba(17,18,16,.12); backdrop-filter: blur(16px) saturate(1.15); -webkit-backdrop-filter: blur(16px) saturate(1.15); pointer-events: none; }
 .header.is-open { mix-blend-mode: normal; }
 .header.is-lightbox { z-index: 800; mix-blend-mode: normal; }
 .header__brand { display: block; transition: opacity .25s; }
 .header.is-lightbox .header__brand { opacity: 0; pointer-events: none; }
-.header__controls { display: flex; align-items: center; min-height: 2.75rem; gap: clamp(.35rem, 1vw, .8rem); margin-left: auto; }
-.header__controls > button { display: flex; align-items: center; justify-content: center; height: 2.75rem; padding: 0 .65rem; border: 0; color: inherit; background: none; font-size: .62rem; font-weight: 500; line-height: 1; letter-spacing: .14em; text-transform: uppercase; }
-.header__controls > button > span { line-height: 1; }
-.menu-toggle { gap: .8rem; }
+.menu-toggle { position: absolute; top: 50%; left: 50%; display: flex; align-items: center; justify-content: center; gap: .7rem; height: 2.75rem; padding: 0 .65rem; border: 0; color: inherit; background: none; font-size: .56rem; font-weight: 500; line-height: 1; letter-spacing: .12em; text-transform: uppercase; transform: translate(-50%, -50%); }
+.menu-toggle > span { line-height: 1; }
 .menu-toggle i { display: block; width: .45rem; height: .45rem; border-radius: 50%; background: var(--mineral); transition: transform .45s cubic-bezier(.2,.75,.2,1), background .3s; }
 .menu-toggle:hover i { transform: scale(2.25); }
+.header__controls { display: flex; align-items: center; min-height: 2.75rem; gap: clamp(.35rem, 1vw, .8rem); }
+.header__controls > button { display: flex; align-items: center; justify-content: center; height: 2.75rem; padding: 0 .65rem; border: 0; color: inherit; background: none; font-size: .62rem; font-weight: 500; line-height: 1; letter-spacing: .14em; text-transform: uppercase; }
+.header__controls > button > span { line-height: 1; }
 .header__controls > .language-toggle { width: 2.75rem; padding: 0; border: 1px solid rgba(238,236,230,.24); border-radius: 50%; background: rgba(12,13,11,.12); text-indent: .14em; transition: color .3s, border-color .3s, background .3s, transform .35s cubic-bezier(.16,1,.3,1); }
 .language-toggle:hover { border-color: var(--paper); transform: scale(1.05); }
 .cart-toggle { position: relative; }
@@ -429,6 +439,7 @@ button { font: inherit; }
 .cursor::before { content: ''; position: absolute; inset: -1px; border-radius: 50%; border: 1px solid rgba(17,18,16,.4); transition: opacity .2s, transform .25s; }
 .cursor i { position: absolute; inset: 0; border-radius: 50%; background: white; mix-blend-mode: difference; transition: opacity .2s, transform .25s; }
 .cursor span { position: absolute; top: 50%; left: 50%; display: grid; place-items: center; width: 4.25rem; height: 4.25rem; border-radius: 50%; color: var(--ink); background: var(--mineral); font-size: .5rem; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; opacity: 0; transform: translate(-50%,-50%) scale(.25); transition: opacity .25s, transform .45s cubic-bezier(.16,1,.3,1); }
+.cursor.is-hover i, .cursor.is-hover::before { transform: scale(1.7); }
 .cursor.is-active i, .cursor.is-active::before { opacity: 0; transform: scale(.2); }
 .cursor.is-active span { opacity: 1; transform: translate(-50%,-50%) scale(1); }
 .cursor b.cursor__zoom { position: absolute; top: 50%; left: 50%; display: grid; place-items: center; width: 3.4rem; height: 3.4rem; border-radius: 50%; color: var(--ink); background: var(--mineral); opacity: 0; transform: translate(-50%,-50%) scale(.25); transition: opacity .25s, transform .45s cubic-bezier(.16,1,.3,1); }
@@ -436,13 +447,18 @@ button { font: inherit; }
 .cursor.is-zoom b.cursor__zoom { opacity: 1; transform: translate(-50%,-50%) scale(1); }
 
 @media (max-width: 760px) {
-  * { cursor: auto; }
-  .print-configurator__option { cursor: pointer; }
-  .lightbox button.lightbox__preorder { cursor: pointer; }
+  * { cursor: auto !important; }
+  .print-configurator__option { cursor: pointer !important; }
+  .lightbox button.lightbox__preorder { cursor: pointer !important; }
   .cursor { display: none; }
   .chapter-rail { display: none; }
   .ambient-grain { opacity: .035; }
   .header { height: calc(4.5rem + env(safe-area-inset-top, 0px)); }
+  /* True centering only holds up when there's room either side of it: on a narrow phone the
+     right-hand cluster (Compte/Panier/FR) is wider than the gap a dead-centered menu would
+     leave, so it overlaps. Letting it rejoin the flex flow keeps the three groups
+     non-overlapping — justify-content: space-between on .header still spaces them out evenly. */
+  .menu-toggle { position: static; transform: none; }
   .poster { padding-top: calc(4.5rem + env(safe-area-inset-top, 0px)); }
   .poster__clouds { top: 34%; }
   .poster__clouds i:nth-child(1) { --cloud-width: 58%; --cloud-peak: .48; }
@@ -550,6 +566,7 @@ button { font: inherit; }
 @media (max-width: 430px) {
   :root { --pad: clamp(1rem, 5vw, 1.35rem); }
   .header__controls > button { padding-inline: .35rem; font-size: .54rem; letter-spacing: .08em; }
+  .menu-toggle { padding-inline: .35rem; font-size: .5rem; letter-spacing: .06em; }
   .hero h1 { font-size: clamp(4rem, 20vw, 5.35rem); line-height: .88; }
   .hero__line--offset { padding-left: clamp(1rem, 8vw, 2rem); }
   .gallery__title, .contact h2 { font-size: clamp(3.8rem, 18vw, 4.8rem); line-height: .92; }

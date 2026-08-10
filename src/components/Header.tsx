@@ -33,28 +33,19 @@ export function Header() {
       <a className="header__brand" href="#ouverture" aria-label={t.header.backToOpening}>
         <Logo compact />
       </a>
+      <button
+        className="menu-toggle"
+        type="button"
+        aria-label={open ? t.common.closeMenu : t.common.openMenu}
+        aria-expanded={open}
+        aria-controls="main-navigation"
+        data-cursor={open ? t.common.close : t.common.open}
+        onClick={toggleMenu}
+      >
+        <span>{open ? t.common.close : t.common.menu}</span>
+        <i aria-hidden="true" />
+      </button>
       <div className="header__controls">
-        <button
-          className="menu-toggle"
-          type="button"
-          aria-label={open ? t.common.closeMenu : t.common.openMenu}
-          aria-expanded={open}
-          aria-controls="main-navigation"
-          data-cursor={open ? t.common.close : t.common.open}
-          onClick={toggleMenu}
-        >
-          <span>{open ? t.common.close : t.common.menu}</span>
-          <i aria-hidden="true" />
-        </button>
-        <button
-          className="language-toggle"
-          type="button"
-          aria-label={t.switchLanguage}
-          title={t.switchLanguage}
-          onClick={toggleLanguage}
-        >
-          <span>{t.languageCode}</span>
-        </button>
         <button
           className="account-toggle"
           type="button"
@@ -73,6 +64,15 @@ export function Header() {
         >
           <span>{t.cart.title}</span>
           {itemCount > 0 && <i aria-hidden="true">{itemCount}</i>}
+        </button>
+        <button
+          className="language-toggle"
+          type="button"
+          aria-label={t.switchLanguage}
+          title={t.switchLanguage}
+          onClick={toggleLanguage}
+        >
+          <span>{t.languageCode}</span>
         </button>
         {modalClose && (
           <button className="header__modal-close" type="button" onClick={modalClose} aria-label={t.common.close}>
