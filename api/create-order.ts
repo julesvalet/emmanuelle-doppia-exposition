@@ -28,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!arePublicSalesOpen() && !promoApplied) {
-      throw new SalesClosedError('Les précommandes ouvrent le 17 août à 10:30, heure de Paris.')
+      throw new SalesClosedError('Les précommandes ouvrent le 17 août à 19:00, heure de Paris.')
     }
 
     if (promoApplied && (lines.length !== 1 || lines[0].quantity !== 1)) {

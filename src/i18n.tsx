@@ -47,7 +47,7 @@ export const translations = {
     sales: {
       sectionLabel: 'Ouverture des précommandes',
       countdownLabel: 'Précommande disponible dans :',
-      opensMessage: 'Les précommandes ouvrent le 17 août à 10:30',
+      opensMessage: 'Les précommandes ouvrent le 17 août à 19:00',
     },
     intro: {
       preamble: 'Préambule',
@@ -126,7 +126,7 @@ export const translations = {
       support: 'Encadrement par contrecollage de la photo sur plaque rigide Dibond 3 mm (plaque aluminium).',
       certificate: 'Certificat d’authenticité inclus avec chaque tirage.',
       shipping: 'Frais de livraison offerts.',
-      opensMessage: 'Les précommandes ouvrent le 17 août à 10:30',
+      opensMessage: 'Les précommandes ouvrent le 17 août à 19:00',
     },
     cart: {
       title: 'Panier',
@@ -237,7 +237,7 @@ export const translations = {
     sales: {
       sectionLabel: 'Pre-order opening',
       countdownLabel: 'Pre-orders available in:',
-      opensMessage: 'Pre-orders open on 17 August at 10:30 am',
+      opensMessage: 'Pre-orders open on 17 August at 7:00 pm',
     },
     intro: {
       preamble: 'Preamble',
@@ -316,7 +316,7 @@ export const translations = {
       support: 'Print mounted on a rigid 3 mm Dibond panel (aluminium composite).',
       certificate: 'Certificate of authenticity included with every print.',
       shipping: 'Free shipping.',
-      opensMessage: 'Pre-orders open on 17 August at 10:30 am',
+      opensMessage: 'Pre-orders open on 17 August at 7:00 pm',
     },
     cart: {
       title: 'Cart',

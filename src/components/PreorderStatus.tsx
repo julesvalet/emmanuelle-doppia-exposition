@@ -23,7 +23,7 @@ export function PreorderStatus() {
     <section className={`preorder-status${statusReady ? ' is-synchronized' : ''}`} aria-label={t.sales.sectionLabel}>
       <div className="preorder-status__countdown">
         <span>{t.sales.countdownLabel}</span>
-        <time dateTime="2026-08-17T10:30:00+02:00" aria-live="off">{countdown}</time>
+        <time dateTime="2026-08-17T19:00:00+02:00" aria-live="off">{countdown}</time>
         <small>{t.sales.opensMessage}</small>
       </div>
     </section>

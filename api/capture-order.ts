@@ -49,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!arePublicSalesOpen() && !isPromoOrder) {
       return res.status(403).json({
         code: 'SALES_NOT_OPEN',
-        error: 'Les précommandes ouvrent le 17 août à 10:30, heure de Paris.',
+        error: 'Les précommandes ouvrent le 17 août à 19:00, heure de Paris.',
       })
     }
 
