@@ -68,6 +68,7 @@ export function CartPanel() {
     if (error instanceof RequestError) {
       if (error.code === 'SALES_NOT_OPEN') return t.shop.opensMessage
       if (error.code === 'PROMO_INVALID') return t.cart.promoInvalid
+      if (error.code === 'PAYPAL_PAYEE_RESTRICTED') return t.cart.paypalMerchantRestricted
     }
     return error instanceof Error && error.message ? error.message : t.cart.errorGeneric
   }

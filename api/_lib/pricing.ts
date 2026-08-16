@@ -13,6 +13,8 @@ export type PricedLine = CartLineInput & {
   finishLabel: string
   unitPrice: number
   lineTotal: number
+  unitPriceCents: number
+  lineTotalCents: number
 }
 
 export class PricingError extends Error {}
@@ -20,6 +22,7 @@ export class PricingError extends Error {}
 export type PricedCart = {
   lines: PricedLine[]
   total: number
+  totalCents: number
 }
 
 // Recalcule chaque ligne et le total à partir du catalogue officiel (src/data/catalogue.ts) :
@@ -55,6 +58,8 @@ export function priceCartLines(input: unknown): PricedCart {
 
     const finish = format.options.find((candidate) => candidate.id === line.finishId)
     if (!finish) throw new PricingError(`Finition inconnue pour l'œuvre n°${artworkNumber}.`)
+    const unitPriceCents = Math.round(finish.price * 100)
+    const lineTotalCents = unitPriceCents * quantity
 
     return {
       artworkNumber,
@@ -65,12 +70,14 @@ export function priceCartLines(input: unknown): PricedCart {
       formatLabel: format.label,
       finishLabel: finish.label.fr,
       unitPrice: finish.price,
-      lineTotal: Math.round(finish.price * quantity * 100) / 100,
+      lineTotal: lineTotalCents / 100,
+      unitPriceCents,
+      lineTotalCents,
     }
   })
 
-  const total = Math.round(lines.reduce((sum, line) => sum + line.lineTotal, 0) * 100) / 100
-  if (total <= 0) throw new PricingError('Montant invalide.')
+  const totalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0)
+  if (!Number.isSafeInteger(totalCents) || totalCents <= 0) throw new PricingError('Montant invalide.')
 
-  return { lines, total }
+  return { lines, total: totalCents / 100, totalCents }
 }

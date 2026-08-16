@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { buildPaypalAmount, centsToPaypalValue } from './_lib/money.js'
 import { getAccessToken, paypalErrorDiagnostic, paypalFetch, PaypalApiError } from './_lib/paypal.js'
 import { priceCartLines, PricingError } from './_lib/pricing.js'
 import {
@@ -18,7 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
-    const { lines, total: catalogueTotal } = priceCartLines(body?.items)
+    const { lines, totalCents: catalogueTotalCents } = priceCartLines(body?.items)
     const promoWasSubmitted = typeof body?.promoCode === 'string' && body.promoCode.trim() !== ''
     const promoApplied = isPreopeningPromoCode(body?.promoCode)
 
@@ -34,10 +35,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new PromoCodeError('Le code teste07 est valable pour un seul tirage, en un seul exemplaire.')
     }
 
-    const payableLines = promoApplied
-      ? [{ ...lines[0], unitPrice: PREOPENING_PROMO_PRICE, lineTotal: PREOPENING_PROMO_PRICE }]
-      : lines
-    const total = promoApplied ? PREOPENING_PROMO_PRICE : catalogueTotal
+    const finalTotalCents = promoApplied
+      ? Math.round(PREOPENING_PROMO_PRICE * 100)
+      : catalogueTotalCents
+    const amount = buildPaypalAmount(catalogueTotalCents, finalTotalCents)
 
     const accessToken = await getAccessToken()
     const order = await paypalFetch<{ id: string }>('/v2/checkout/orders', accessToken, {
@@ -46,17 +47,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         intent: 'CAPTURE',
         purchase_units: [{
           custom_id: promoApplied ? PREOPENING_PROMO_ORDER_MARKER : 'photographic-prints',
-          amount: {
-            currency_code: 'EUR',
-            value: total.toFixed(2),
-            breakdown: {
-              item_total: { currency_code: 'EUR', value: total.toFixed(2) },
-            },
-          },
-          items: payableLines.map((line) => ({
+          amount,
+          items: lines.map((line) => ({
             name: `${line.title} — ${line.formatLabel} (${line.finishLabel})`.slice(0, 127),
             quantity: String(line.quantity),
-            unit_amount: { currency_code: 'EUR', value: line.unitPrice.toFixed(2) },
+            unit_amount: { currency_code: 'EUR', value: centsToPaypalValue(line.unitPriceCents) },
             category: 'PHYSICAL_GOODS',
           })),
         }],
@@ -81,12 +76,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (error instanceof PaypalApiError) {
       const diagnostic = paypalErrorDiagnostic(error)
       console.error('create-order: PayPal error', JSON.stringify(diagnostic))
+      if (diagnostic.details.some((detail) => detail.issue === 'PAYEE_ACCOUNT_RESTRICTED')) {
+        return res.status(503).json({
+          error: 'Le compte marchand PayPal Live ne peut pas recevoir ce paiement pour le moment.',
+          code: 'PAYPAL_PAYEE_RESTRICTED',
+        })
+      }
       return res.status(502).json({
         error: 'La création de la commande PayPal a échoué.',
         code: 'PAYPAL_CREATE_FAILED',
-        paypalIssue: diagnostic.details[0]?.issue,
-        paypalField: diagnostic.details[0]?.field,
-        paypalDebugId: diagnostic.debugId,
       })
     }
     console.error('create-order: unexpected error', error)

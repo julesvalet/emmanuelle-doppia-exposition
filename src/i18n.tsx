@@ -156,6 +156,7 @@ export const translations = {
       promoInvalid: 'Ce code promotionnel est invalide ou a expiré.',
       promoSingleItem: 'Le code est valable pour un seul tirage, en un seul exemplaire.',
       promoRequired: 'Les précommandes ne sont pas encore ouvertes. Un code valide permet de commander maintenant.',
+      paypalMerchantRestricted: 'Le compte marchand PayPal Live ne peut pas recevoir de paiement pour le moment. Veuillez réessayer après sa réactivation.',
     },
     account: {
       account: 'Compte',
@@ -345,6 +346,7 @@ export const translations = {
       promoInvalid: 'This promo code is invalid or has expired.',
       promoSingleItem: 'The code is valid for one print, in a quantity of one.',
       promoRequired: 'Pre-orders are not open yet. A valid code lets you order now.',
+      paypalMerchantRestricted: 'The PayPal Live merchant account cannot receive payments at the moment. Please try again after it has been reactivated.',
     },
     account: {
       account: 'Account',
