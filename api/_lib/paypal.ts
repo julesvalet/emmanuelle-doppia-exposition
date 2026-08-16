@@ -55,7 +55,7 @@ export function paypalErrorDiagnostic(error: PaypalApiError) {
     status: error.status,
     name: stringOrUndefined(body?.name),
     message: stringOrUndefined(body?.message),
-    debugId: stringOrUndefined(body?.debug_id),
+    debug_id: stringOrUndefined(body?.debug_id),
     details,
   }
 }
