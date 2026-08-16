@@ -44,6 +44,18 @@ export const translations = {
       label: 'Affiche de l’exposition',
       alt: 'Affiche de l’exposition EXPOZITION : une ligne de pins en silhouette sous un ciel nuageux, traversée par le lettrage blanc « EXPOZITION » dont les lettres « OZ » sont traitées en texture bois.',
     },
+    sales: {
+      sectionLabel: 'Ouverture des précommandes et test de paiement',
+      countdownLabel: 'Précommande disponible dans :',
+      opensMessage: 'Les précommandes ouvrent le 17 août à 10:30',
+      testEyebrow: 'Vérification PayPal Live',
+      testProductName: 'Article test PayPal Live',
+      testPayment: 'Test paiement',
+      addTest: 'Ajouter le test à 1 €',
+      openCart: 'Ouvrir le panier',
+      soldOut: 'L’article test PayPal Live est épuisé et a été retiré du panier.',
+      temporarilyUnavailable: 'Une transaction est en cours. Réessayez dans quelques minutes.',
+    },
     intro: {
       preamble: 'Préambule',
       gaze: 'Le regard',
@@ -121,6 +133,7 @@ export const translations = {
       support: 'Encadrement par contrecollage de la photo sur plaque rigide Dibond 3 mm (plaque aluminium).',
       certificate: 'Certificat d’authenticité inclus avec chaque tirage.',
       shipping: 'Frais de livraison offerts.',
+      opensMessage: 'Les précommandes ouvrent le 17 août à 10:30',
     },
     cart: {
       title: 'Panier',
@@ -143,6 +156,8 @@ export const translations = {
       successIntro: 'Votre paiement a été confirmé par PayPal.',
       orderNumber: 'Numéro de commande PayPal',
       continueBrowsing: 'Continuer la visite',
+      mixedTestOrder: 'L’article test doit être commandé seul. Retirez les tirages pour continuer.',
+      testUnavailable: 'L’article test PayPal Live n’est plus disponible.',
     },
     account: {
       account: 'Compte',
@@ -219,6 +234,18 @@ export const translations = {
     poster: {
       label: 'Exhibition poster',
       alt: 'Poster for the EXPOZITION exhibition: a line of silhouetted pines under a cloudy sky, crossed by the white “EXPOZITION” lettering whose “OZ” letters are rendered in a wood texture.',
+    },
+    sales: {
+      sectionLabel: 'Pre-order opening and payment test',
+      countdownLabel: 'Pre-orders available in:',
+      opensMessage: 'Pre-orders open on 17 August at 10:30 am',
+      testEyebrow: 'PayPal Live verification',
+      testProductName: 'PayPal Live test item',
+      testPayment: 'Payment test',
+      addTest: 'Add the €1 test',
+      openCart: 'Open cart',
+      soldOut: 'The PayPal Live test item is sold out and has been removed from your cart.',
+      temporarilyUnavailable: 'A transaction is in progress. Please try again in a few minutes.',
     },
     intro: {
       preamble: 'Preamble',
@@ -297,6 +324,7 @@ export const translations = {
       support: 'Print mounted on a rigid 3 mm Dibond panel (aluminium composite).',
       certificate: 'Certificate of authenticity included with every print.',
       shipping: 'Free shipping.',
+      opensMessage: 'Pre-orders open on 17 August at 10:30 am',
     },
     cart: {
       title: 'Cart',
@@ -319,6 +347,8 @@ export const translations = {
       successIntro: 'Your payment has been confirmed by PayPal.',
       orderNumber: 'PayPal order number',
       continueBrowsing: 'Continue browsing',
+      mixedTestOrder: 'The test item must be ordered separately. Remove the prints to continue.',
+      testUnavailable: 'The PayPal Live test item is no longer available.',
     },
     account: {
       account: 'Account',

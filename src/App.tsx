@@ -13,6 +13,7 @@ import { Header } from './components/Header'
 import { Logo } from './components/Logo'
 import { ParticleRibbonOverlay } from './components/ParticleRibbonOverlay'
 import { ParticleCamera } from './components/ParticleCamera'
+import { PreorderStatus } from './components/PreorderStatus'
 import { AustraliaEarthZoom } from './components/AustraliaEarthZoom'
 import { modalScrollLockEvent, type ModalScrollLockDetail } from './hooks/useModalScrollLock'
 
@@ -141,6 +142,8 @@ function App() {
           </h1>
           <div className="hero__mark"><span>{t.hero.scroll}</span><i /></div>
         </section>
+
+        <PreorderStatus />
 
         <section className="intro editorial-section" aria-labelledby="intro-title">
           <div className="section-kicker reveal"><span>01</span><span>{t.intro.preamble}</span><span>{t.intro.gaze}</span></div>

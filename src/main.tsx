@@ -11,16 +11,19 @@ import { LanguageProvider } from './i18n'
 import { InterfaceControlsProvider } from './interfaceControls'
 import { CartProvider } from './cart'
 import { AuthProvider } from './auth'
+import { SalesProvider } from './sales'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <LanguageProvider>
       <AuthProvider>
-        <CartProvider>
-          <InterfaceControlsProvider>
-            <App />
-          </InterfaceControlsProvider>
-        </CartProvider>
+        <SalesProvider>
+          <CartProvider>
+            <InterfaceControlsProvider>
+              <App />
+            </InterfaceControlsProvider>
+          </CartProvider>
+        </SalesProvider>
       </AuthProvider>
     </LanguageProvider>
   </StrictMode>,

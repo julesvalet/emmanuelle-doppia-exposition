@@ -4,6 +4,8 @@ import type { OnApproveData } from '@paypal/paypal-js'
 import { useCart, type CartItem } from '../cart'
 import { useLanguage } from '../i18n'
 import { useModalScrollLock } from '../hooks/useModalScrollLock'
+import { TEST_PRODUCT_TYPE } from '../data/sales'
+import { useSales } from '../sales'
 
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID
 
@@ -15,6 +17,15 @@ type OrderSummary = {
   total: number
 }
 
+class RequestError extends Error {
+  code?: string
+
+  constructor(message?: string, code?: string) {
+    super(message)
+    this.code = code
+  }
+}
+
 async function requestJson(path: string, body: unknown) {
   const response = await fetch(path, {
     method: 'POST',
@@ -24,7 +35,8 @@ async function requestJson(path: string, body: unknown) {
   const data = await response.json().catch(() => null)
   if (!response.ok) {
     const message = (data && typeof data === 'object' && 'error' in data) ? String((data as { error: unknown }).error) : undefined
-    throw new Error(message)
+    const code = (data && typeof data === 'object' && 'code' in data) ? String((data as { code: unknown }).code) : undefined
+    throw new RequestError(message, code)
   }
   return data
 }
@@ -32,12 +44,43 @@ async function requestJson(path: string, body: unknown) {
 export function CartPanel() {
   const { language, t } = useLanguage()
   const { items, itemCount, total, removeItem, setQuantity, clearCart, isOpen, closeCart } = useCart()
+  const { isSalesOpen, testStock, testAvailable, refreshStatus } = useSales()
   const [step, setStep] = useState<Step>('cart')
   const [notice, setNotice] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [summary, setSummary] = useState<OrderSummary | null>(null)
+  const [pendingOrderID, setPendingOrderID] = useState<string | null>(null)
 
   useModalScrollLock(isOpen)
+
+  const hasTestItem = items.some((item) => item.productType === TEST_PRODUCT_TYPE)
+  const hasPrintItem = items.some((item) => item.productType !== TEST_PRODUCT_TYPE)
+  const isTestOnly = items.length === 1 && hasTestItem && items[0].quantity === 1
+  const checkoutAllowed = isTestOnly ? (testAvailable ?? 0) > 0 : isSalesOpen && !hasTestItem
+  const checkoutNotice = hasTestItem && hasPrintItem
+    ? t.cart.mixedTestOrder
+    : hasTestItem && testAvailable === 0
+      ? t.cart.testUnavailable
+      : !isSalesOpen && hasPrintItem
+        ? t.shop.opensMessage
+        : ''
+
+  const localizedRequestError = (error: unknown) => {
+    if (error instanceof RequestError) {
+      if (error.code === 'SALES_NOT_OPEN') return t.shop.opensMessage
+      if (error.code === 'TEST_UNAVAILABLE' || error.code === 'INVALID_TEST_ORDER') return t.cart.testUnavailable
+    }
+    return error instanceof Error && error.message ? error.message : t.cart.errorGeneric
+  }
+
+  useEffect(() => {
+    if (testStock !== 0) return
+    const staleTestItems = items.filter((item) => item.productType === TEST_PRODUCT_TYPE)
+    if (staleTestItems.length === 0) return
+    staleTestItems.forEach((item) => removeItem(item.key))
+    setNotice(t.sales.soldOut)
+    setStep('cart')
+  }, [items, removeItem, t.sales.soldOut, testStock])
 
   useEffect(() => {
     if (isOpen) return
@@ -65,41 +108,58 @@ export function CartPanel() {
   if (!isOpen) return null
 
   const goToCheckout = () => {
+    if (!checkoutAllowed) return
     setNotice('')
     setStep('checkout')
   }
 
   const createOrder = async () => {
-    const data = await requestJson('/api/create-order', {
-      items: items.map((item) => ({
-        artworkNumber: item.artworkNumber,
-        formatId: item.formatId,
-        finishId: item.finishId,
-        quantity: item.quantity,
-      })),
-    })
-    return (data as { orderID: string }).orderID
+    setPendingOrderID(null)
+    try {
+      const data = await requestJson('/api/create-order', {
+        items: items.map((item) => ({
+          productType: item.productType,
+          productId: item.productId,
+          artworkNumber: item.artworkNumber,
+          formatId: item.formatId,
+          finishId: item.finishId,
+          quantity: item.quantity,
+        })),
+      })
+      return (data as { orderID: string }).orderID
+    } catch (error) {
+      setErrorMessage(localizedRequestError(error))
+      throw error
+    }
   }
 
-  const onApprove = async (data: OnApproveData) => {
+  const completeApprovedOrder = async (orderID: string) => {
     try {
-      await requestJson('/api/capture-order', { orderID: data.orderID })
-      setSummary({ orderID: data.orderID, items, total })
+      await requestJson('/api/capture-order', { orderID })
+      setSummary({ orderID, items, total })
       clearCart()
+      await refreshStatus()
+      setPendingOrderID(null)
       setStep('success')
     } catch (error) {
-      setErrorMessage(error instanceof Error && error.message ? error.message : t.cart.errorGeneric)
+      setErrorMessage(localizedRequestError(error))
       setStep('error')
     }
   }
 
+  const onApprove = async (data: OnApproveData) => {
+    setPendingOrderID(data.orderID)
+    await completeApprovedOrder(data.orderID)
+  }
+
   const onCancel = () => {
+    setPendingOrderID(null)
     setNotice(t.cart.cancelledNotice)
     setStep('cart')
   }
 
   const onError = () => {
-    setErrorMessage(t.cart.errorGeneric)
+    setErrorMessage((current) => current || t.cart.errorGeneric)
     setStep('error')
   }
 
@@ -166,7 +226,9 @@ export function CartPanel() {
               ))}
             </ul>
             <p className="cart-panel__secure-note">{t.cart.securePayment}</p>
-            {PAYPAL_CLIENT_ID ? (
+            {!checkoutAllowed ? (
+              <p className="cart-panel__notice">{checkoutNotice || t.cart.testUnavailable}</p>
+            ) : PAYPAL_CLIENT_ID ? (
               <PayPalScriptProvider
                 options={{
                   clientId: PAYPAL_CLIENT_ID,
@@ -218,18 +280,25 @@ export function CartPanel() {
         {step === 'error' && (
           <div className="cart-panel__body">
             <p className="cart-panel__error">{errorMessage}</p>
-            <button type="button" className="cart-panel__checkout" onClick={() => setStep('checkout')}>{t.cart.retry}</button>
+            <button
+              type="button"
+              className="cart-panel__checkout"
+              onClick={() => pendingOrderID ? void completeApprovedOrder(pendingOrderID) : setStep('checkout')}
+            >
+              {t.cart.retry}
+            </button>
             <button type="button" className="cart-panel__back" onClick={() => setStep('cart')}>{t.cart.backToCart}</button>
           </div>
         )}
 
         {step === 'cart' && items.length > 0 && (
           <footer className="cart-panel__footer">
+            {checkoutNotice && <p className="cart-panel__notice">{checkoutNotice}</p>}
             <div className="cart-panel__total">
               <span>{t.cart.total}</span>
               <strong>{currencyFormatter.format(total)}</strong>
             </div>
-            <button type="button" className="cart-panel__checkout" onClick={goToCheckout} disabled={itemCount === 0}>
+            <button type="button" className="cart-panel__checkout" onClick={goToCheckout} disabled={itemCount === 0 || !checkoutAllowed}>
               {t.cart.checkout}
             </button>
           </footer>

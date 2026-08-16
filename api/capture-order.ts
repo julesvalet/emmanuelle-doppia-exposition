@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getAccessToken, paypalFetch, PaypalApiError } from './_lib/paypal.js'
+import { arePublicSalesOpen, TEST_PRODUCT_ID } from './_lib/sales.js'
+import { claimTestOrder, finalizeTestCapture, getTestReservation, releaseTestClaim } from './_lib/supabase.js'
 
 type CaptureOrderResponse = {
   id: string
@@ -9,6 +11,8 @@ type CaptureOrderResponse = {
     email_address?: string
   }
   purchase_units?: Array<{
+    custom_id?: string
+    amount?: { currency_code: string; value: string }
     payments?: {
       captures?: Array<{
         id: string
@@ -31,17 +35,83 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Identifiant de commande manquant.' })
     }
 
+    const reservation = await getTestReservation(orderID)
+    const isTestOrder = reservation !== null
+
+    if (!isTestOrder && !arePublicSalesOpen()) {
+      return res.status(403).json({
+        code: 'SALES_NOT_OPEN',
+        error: 'Les précommandes ouvrent le 17 août à 10:30, heure de Paris.',
+      })
+    }
+
+    if (isTestOrder && !(await claimTestOrder(orderID))) {
+      return res.status(409).json({ code: 'TEST_UNAVAILABLE', error: 'L’article test n’est plus disponible.' })
+    }
+
     const accessToken = await getAccessToken()
-    const capture = await paypalFetch<CaptureOrderResponse>(`/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`, accessToken, {
-      method: 'POST',
-    })
+    const orderPath = `/v2/checkout/orders/${encodeURIComponent(orderID)}`
+    let capture = await paypalFetch<CaptureOrderResponse>(orderPath, accessToken)
+    const orderMarksOfficialTest = capture.purchase_units?.[0]?.custom_id === TEST_PRODUCT_ID
+
+    // A test order is exceptional only when both independent server-side facts agree:
+    // our atomic reservation exists and PayPal carries the official, server-authored marker.
+    if (orderMarksOfficialTest !== isTestOrder) {
+      if (isTestOrder) await releaseTestClaim(orderID)
+      return res.status(409).json({ code: 'INVALID_TEST_ORDER', error: 'La commande test PayPal ne correspond pas à l’article officiel.' })
+    }
+
+    if (isTestOrder) {
+      const orderAmount = capture.purchase_units?.[0]?.amount
+      if (orderAmount?.currency_code !== 'EUR' || orderAmount.value !== '1.00') {
+        await releaseTestClaim(orderID)
+        return res.status(409).json({ code: 'INVALID_TEST_ORDER', error: 'La commande test PayPal ne correspond pas au prix officiel.' })
+      }
+    }
 
     if (capture.status !== 'COMPLETED') {
+      try {
+        capture = await paypalFetch<CaptureOrderResponse>(`${orderPath}/capture`, accessToken, { method: 'POST' })
+      } catch (captureError) {
+        if (!isTestOrder) throw captureError
+
+        // A network/PayPal error can arrive after PayPal accepted the capture. Re-read the
+        // order before releasing its locked stock slot; an uncertain result remains locked.
+        try {
+          const recovered = await paypalFetch<CaptureOrderResponse>(orderPath, accessToken)
+          if (recovered.status === 'COMPLETED') {
+            capture = recovered
+          } else {
+            await releaseTestClaim(orderID)
+            throw captureError
+          }
+        } catch (recoveryError) {
+          if (recoveryError === captureError) throw recoveryError
+          throw captureError
+        }
+      }
+    }
+
+    if (capture.status !== 'COMPLETED') {
+      if (isTestOrder) await releaseTestClaim(orderID)
       return res.status(402).json({ error: 'Le paiement n’a pas pu être finalisé.', status: capture.status })
     }
 
     const purchaseUnit = capture.purchase_units?.[0]
     const captureDetail = purchaseUnit?.payments?.captures?.[0]
+
+    if (isTestOrder) {
+      const isOfficialTestPayment = captureDetail?.amount?.currency_code === 'EUR'
+        && captureDetail.amount.value === '1.00'
+        && typeof captureDetail.id === 'string'
+
+      if (!isOfficialTestPayment) {
+        console.error('capture-order: invalid test order payload', orderID)
+        return res.status(409).json({ code: 'INVALID_TEST_ORDER', error: 'La commande test PayPal ne correspond pas à l’article officiel.' })
+      }
+
+      await finalizeTestCapture(orderID, captureDetail.id)
+    }
 
     return res.status(200).json({
       orderID: capture.id,
