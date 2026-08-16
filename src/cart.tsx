@@ -1,7 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { LocalizedText } from './data/catalogue'
-import { TEST_PRODUCT_TYPE } from './data/sales'
 
 const STORAGE_KEY = 'emmanuelle-doppia-cart'
 const MAX_QUANTITY = 20
@@ -19,8 +18,6 @@ export type CartItem = {
   unitPrice: number
   quantity: number
   thumbnail: string
-  productType?: 'print' | typeof TEST_PRODUCT_TYPE
-  productId?: string
 }
 
 export type NewCartItem = Omit<CartItem, 'quantity'>
@@ -46,7 +43,9 @@ function initialItems(): CartItem[] {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return []
     const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
+    return Array.isArray(parsed)
+      ? parsed.filter((item) => (item as { productType?: string }).productType !== 'paypal-live-test')
+      : []
   } catch {
     return []
   }
@@ -66,14 +65,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = useCallback((item: NewCartItem, quantity = 1) => {
     setItems((current) => {
-      const maximum = item.productType === TEST_PRODUCT_TYPE ? 1 : MAX_QUANTITY
       const existing = current.find((candidate) => candidate.key === item.key)
       if (existing) {
         return current.map((candidate) => candidate.key === item.key
-          ? { ...candidate, quantity: Math.min(maximum, candidate.quantity + quantity) }
+          ? { ...candidate, quantity: Math.min(MAX_QUANTITY, candidate.quantity + quantity) }
           : candidate)
       }
-      return [...current, { ...item, quantity: Math.min(maximum, quantity) }]
+      return [...current, { ...item, quantity: Math.min(MAX_QUANTITY, quantity) }]
     })
   }, [])
 
@@ -85,7 +83,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((current) => {
       if (quantity < 1) return current.filter((candidate) => candidate.key !== key)
       return current.map((candidate) => candidate.key === key
-        ? { ...candidate, quantity: Math.min(candidate.productType === TEST_PRODUCT_TYPE ? 1 : MAX_QUANTITY, quantity) }
+        ? { ...candidate, quantity: Math.min(MAX_QUANTITY, quantity) }
         : candidate)
     })
   }, [])

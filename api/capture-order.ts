@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getAccessToken, paypalFetch, PaypalApiError } from './_lib/paypal.js'
-import { arePublicSalesOpen, TEST_PRODUCT_ID } from './_lib/sales.js'
-import { claimTestOrder, finalizeTestCapture, getTestReservation, releaseTestClaim } from './_lib/supabase.js'
+import { arePublicSalesOpen, PREOPENING_PROMO_ORDER_MARKER } from './_lib/sales.js'
 
 type CaptureOrderResponse = {
   id: string
@@ -35,54 +34,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Identifiant de commande manquant.' })
     }
 
-    const reservation = await getTestReservation(orderID)
-    const isTestOrder = reservation !== null
+    const accessToken = await getAccessToken()
+    const orderPath = `/v2/checkout/orders/${encodeURIComponent(orderID)}`
+    let capture = await paypalFetch<CaptureOrderResponse>(orderPath, accessToken)
+    const isPromoOrder = capture.purchase_units?.[0]?.custom_id === PREOPENING_PROMO_ORDER_MARKER
 
-    if (!isTestOrder && !arePublicSalesOpen()) {
+    if (isPromoOrder) {
+      const orderAmount = capture.purchase_units?.[0]?.amount
+      if (orderAmount?.currency_code !== 'EUR' || orderAmount.value !== '1.00') {
+        return res.status(409).json({ code: 'PROMO_INVALID', error: 'La commande promotionnelle ne correspond pas au prix officiel.' })
+      }
+    }
+
+    if (!arePublicSalesOpen() && !isPromoOrder) {
       return res.status(403).json({
         code: 'SALES_NOT_OPEN',
         error: 'Les précommandes ouvrent le 17 août à 10:30, heure de Paris.',
       })
     }
 
-    if (isTestOrder && !(await claimTestOrder(orderID))) {
-      return res.status(409).json({ code: 'TEST_UNAVAILABLE', error: 'L’article test n’est plus disponible.' })
-    }
-
-    const accessToken = await getAccessToken()
-    const orderPath = `/v2/checkout/orders/${encodeURIComponent(orderID)}`
-    let capture = await paypalFetch<CaptureOrderResponse>(orderPath, accessToken)
-    const orderMarksOfficialTest = capture.purchase_units?.[0]?.custom_id === TEST_PRODUCT_ID
-
-    // A test order is exceptional only when both independent server-side facts agree:
-    // our atomic reservation exists and PayPal carries the official, server-authored marker.
-    if (orderMarksOfficialTest !== isTestOrder) {
-      if (isTestOrder) await releaseTestClaim(orderID)
-      return res.status(409).json({ code: 'INVALID_TEST_ORDER', error: 'La commande test PayPal ne correspond pas à l’article officiel.' })
-    }
-
-    if (isTestOrder) {
-      const orderAmount = capture.purchase_units?.[0]?.amount
-      if (orderAmount?.currency_code !== 'EUR' || orderAmount.value !== '1.00') {
-        await releaseTestClaim(orderID)
-        return res.status(409).json({ code: 'INVALID_TEST_ORDER', error: 'La commande test PayPal ne correspond pas au prix officiel.' })
-      }
-    }
-
     if (capture.status !== 'COMPLETED') {
       try {
         capture = await paypalFetch<CaptureOrderResponse>(`${orderPath}/capture`, accessToken, { method: 'POST' })
       } catch (captureError) {
-        if (!isTestOrder) throw captureError
-
         // A network/PayPal error can arrive after PayPal accepted the capture. Re-read the
-        // order before releasing its locked stock slot; an uncertain result remains locked.
+        // same order so the client can safely retry without creating another payment.
         try {
           const recovered = await paypalFetch<CaptureOrderResponse>(orderPath, accessToken)
           if (recovered.status === 'COMPLETED') {
             capture = recovered
           } else {
-            await releaseTestClaim(orderID)
             throw captureError
           }
         } catch (recoveryError) {
@@ -93,24 +74,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (capture.status !== 'COMPLETED') {
-      if (isTestOrder) await releaseTestClaim(orderID)
       return res.status(402).json({ error: 'Le paiement n’a pas pu être finalisé.', status: capture.status })
     }
 
     const purchaseUnit = capture.purchase_units?.[0]
     const captureDetail = purchaseUnit?.payments?.captures?.[0]
 
-    if (isTestOrder) {
-      const isOfficialTestPayment = captureDetail?.amount?.currency_code === 'EUR'
+    if (isPromoOrder) {
+      const isOfficialPromoPayment = captureDetail?.amount?.currency_code === 'EUR'
         && captureDetail.amount.value === '1.00'
         && typeof captureDetail.id === 'string'
 
-      if (!isOfficialTestPayment) {
-        console.error('capture-order: invalid test order payload', orderID)
-        return res.status(409).json({ code: 'INVALID_TEST_ORDER', error: 'La commande test PayPal ne correspond pas à l’article officiel.' })
+      if (!isOfficialPromoPayment) {
+        console.error('capture-order: invalid promotional order payload', orderID)
+        return res.status(409).json({ code: 'PROMO_INVALID', error: 'La commande promotionnelle ne correspond pas au prix officiel.' })
       }
-
-      await finalizeTestCapture(orderID, captureDetail.id)
     }
 
     return res.status(200).json({

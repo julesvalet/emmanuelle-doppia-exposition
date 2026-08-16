@@ -4,7 +4,7 @@ import type { OnApproveData } from '@paypal/paypal-js'
 import { useCart, type CartItem } from '../cart'
 import { useLanguage } from '../i18n'
 import { useModalScrollLock } from '../hooks/useModalScrollLock'
-import { TEST_PRODUCT_TYPE } from '../data/sales'
+import { PREOPENING_PROMO_CODE, PREOPENING_PROMO_PRICE } from '../data/sales'
 import { useSales } from '../sales'
 
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID
@@ -15,6 +15,7 @@ type OrderSummary = {
   orderID: string
   items: CartItem[]
   total: number
+  promoApplied: boolean
 }
 
 class RequestError extends Error {
@@ -44,43 +45,38 @@ async function requestJson(path: string, body: unknown) {
 export function CartPanel() {
   const { language, t } = useLanguage()
   const { items, itemCount, total, removeItem, setQuantity, clearCart, isOpen, closeCart } = useCart()
-  const { isSalesOpen, testStock, testAvailable, refreshStatus } = useSales()
+  const { isSalesOpen, refreshStatus } = useSales()
   const [step, setStep] = useState<Step>('cart')
   const [notice, setNotice] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [summary, setSummary] = useState<OrderSummary | null>(null)
   const [pendingOrderID, setPendingOrderID] = useState<string | null>(null)
+  const [pendingTotal, setPendingTotal] = useState<number | null>(null)
+  const [promoInput, setPromoInput] = useState('')
+  const [promoApplied, setPromoApplied] = useState(false)
+  const [promoMessage, setPromoMessage] = useState('')
 
   useModalScrollLock(isOpen)
 
-  const hasTestItem = items.some((item) => item.productType === TEST_PRODUCT_TYPE)
-  const hasPrintItem = items.some((item) => item.productType !== TEST_PRODUCT_TYPE)
-  const isTestOnly = items.length === 1 && hasTestItem && items[0].quantity === 1
-  const checkoutAllowed = isTestOnly ? (testAvailable ?? 0) > 0 : isSalesOpen && !hasTestItem
-  const checkoutNotice = hasTestItem && hasPrintItem
-    ? t.cart.mixedTestOrder
-    : hasTestItem && testAvailable === 0
-      ? t.cart.testUnavailable
-      : !isSalesOpen && hasPrintItem
-        ? t.shop.opensMessage
-        : ''
+  const promoEligibleCart = items.length === 1 && itemCount === 1
+  const activePromo = !isSalesOpen && promoApplied && promoEligibleCart
+  const checkoutAllowed = isSalesOpen || activePromo
+  const checkoutTotal = activePromo ? PREOPENING_PROMO_PRICE : total
+  const checkoutNotice = !isSalesOpen && !activePromo ? t.cart.promoRequired : ''
 
   const localizedRequestError = (error: unknown) => {
     if (error instanceof RequestError) {
       if (error.code === 'SALES_NOT_OPEN') return t.shop.opensMessage
-      if (error.code === 'TEST_UNAVAILABLE' || error.code === 'INVALID_TEST_ORDER') return t.cart.testUnavailable
+      if (error.code === 'PROMO_INVALID') return t.cart.promoInvalid
     }
     return error instanceof Error && error.message ? error.message : t.cart.errorGeneric
   }
 
   useEffect(() => {
-    if (testStock !== 0) return
-    const staleTestItems = items.filter((item) => item.productType === TEST_PRODUCT_TYPE)
-    if (staleTestItems.length === 0) return
-    staleTestItems.forEach((item) => removeItem(item.key))
-    setNotice(t.sales.soldOut)
-    setStep('cart')
-  }, [items, removeItem, t.sales.soldOut, testStock])
+    if (!promoApplied || (promoEligibleCart && !isSalesOpen)) return
+    setPromoApplied(false)
+    setPromoMessage('')
+  }, [isSalesOpen, promoApplied, promoEligibleCart])
 
   useEffect(() => {
     if (isOpen) return
@@ -113,18 +109,33 @@ export function CartPanel() {
     setStep('checkout')
   }
 
+  const applyPromo = () => {
+    if (!promoEligibleCart) {
+      setPromoApplied(false)
+      setPromoMessage(t.cart.promoSingleItem)
+      return
+    }
+    if (promoInput.trim().toLowerCase() !== PREOPENING_PROMO_CODE) {
+      setPromoApplied(false)
+      setPromoMessage(t.cart.promoInvalid)
+      return
+    }
+    setPromoApplied(true)
+    setPromoMessage(t.cart.promoApplied)
+  }
+
   const createOrder = async () => {
     setPendingOrderID(null)
+    setPendingTotal(checkoutTotal)
     try {
       const data = await requestJson('/api/create-order', {
         items: items.map((item) => ({
-          productType: item.productType,
-          productId: item.productId,
           artworkNumber: item.artworkNumber,
           formatId: item.formatId,
           finishId: item.finishId,
           quantity: item.quantity,
         })),
+        promoCode: activePromo ? promoInput.trim() : undefined,
       })
       return (data as { orderID: string }).orderID
     } catch (error) {
@@ -136,10 +147,11 @@ export function CartPanel() {
   const completeApprovedOrder = async (orderID: string) => {
     try {
       await requestJson('/api/capture-order', { orderID })
-      setSummary({ orderID, items, total })
+      setSummary({ orderID, items, total: pendingTotal ?? checkoutTotal, promoApplied: activePromo || pendingTotal === PREOPENING_PROMO_PRICE })
       clearCart()
       await refreshStatus()
       setPendingOrderID(null)
+      setPendingTotal(null)
       setStep('success')
     } catch (error) {
       setErrorMessage(localizedRequestError(error))
@@ -154,6 +166,7 @@ export function CartPanel() {
 
   const onCancel = () => {
     setPendingOrderID(null)
+    setPendingTotal(null)
     setNotice(t.cart.cancelledNotice)
     setStep('cart')
   }
@@ -221,13 +234,14 @@ export function CartPanel() {
               {items.map((item) => (
                 <li key={item.key}>
                   <span>{item.quantity} × {item.title} — {item.formatLabel} ({item.finishLabel[language]})</span>
-                  <strong>{currencyFormatter.format(item.unitPrice * item.quantity)}</strong>
+                  <strong>{currencyFormatter.format(activePromo ? PREOPENING_PROMO_PRICE : item.unitPrice * item.quantity)}</strong>
                 </li>
               ))}
             </ul>
+            {activePromo && <p className="cart-panel__promo-confirmation">{t.cart.promoApplied}</p>}
             <p className="cart-panel__secure-note">{t.cart.securePayment}</p>
             {!checkoutAllowed ? (
-              <p className="cart-panel__notice">{checkoutNotice || t.cart.testUnavailable}</p>
+              <p className="cart-panel__notice">{checkoutNotice}</p>
             ) : PAYPAL_CLIENT_ID ? (
               <PayPalScriptProvider
                 options={{
@@ -265,7 +279,7 @@ export function CartPanel() {
               {summary.items.map((item) => (
                 <li key={item.key}>
                   <span>{item.quantity} × {item.title} — {item.formatLabel} ({item.finishLabel[language]})</span>
-                  <strong>{currencyFormatter.format(item.unitPrice * item.quantity)}</strong>
+                  <strong>{currencyFormatter.format(summary.promoApplied ? PREOPENING_PROMO_PRICE : item.unitPrice * item.quantity)}</strong>
                 </li>
               ))}
             </ul>
@@ -293,10 +307,37 @@ export function CartPanel() {
 
         {step === 'cart' && items.length > 0 && (
           <footer className="cart-panel__footer">
+            {!isSalesOpen && (
+              <div className="cart-panel__promo">
+                <label htmlFor="cart-promo-code">{t.cart.promoLabel}</label>
+                <div>
+                  <input
+                    id="cart-promo-code"
+                    type="text"
+                    value={promoInput}
+                    placeholder={t.cart.promoPlaceholder}
+                    autoComplete="off"
+                    onChange={(event) => {
+                      setPromoInput(event.target.value)
+                      setPromoApplied(false)
+                      setPromoMessage('')
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        applyPromo()
+                      }
+                    }}
+                  />
+                  <button type="button" onClick={applyPromo}>{t.cart.promoApply}</button>
+                </div>
+                {promoMessage && <small className={promoApplied ? 'is-valid' : 'is-invalid'}>{promoMessage}</small>}
+              </div>
+            )}
             {checkoutNotice && <p className="cart-panel__notice">{checkoutNotice}</p>}
             <div className="cart-panel__total">
               <span>{t.cart.total}</span>
-              <strong>{currencyFormatter.format(total)}</strong>
+              <strong>{currencyFormatter.format(checkoutTotal)}</strong>
             </div>
             <button type="button" className="cart-panel__checkout" onClick={goToCheckout} disabled={itemCount === 0 || !checkoutAllowed}>
               {t.cart.checkout}

@@ -134,6 +134,8 @@ function App() {
           <div className="poster__clouds" aria-hidden="true"><i /><i /><i /></div>
         </section>
 
+        <PreorderStatus />
+
         <section className="hero" id="ouverture" aria-labelledby="hero-title" data-chapter>
           <div className="hero__meta"><span>{t.hero.exhibition}</span><span>{t.hero.edition} {site.year}</span></div>
           <h1 className="hero__title--exhibition" id="hero-title">
@@ -142,8 +144,6 @@ function App() {
           </h1>
           <div className="hero__mark"><span>{t.hero.scroll}</span><i /></div>
         </section>
-
-        <PreorderStatus />
 
         <section className="intro editorial-section" aria-labelledby="intro-title">
           <div className="section-kicker reveal"><span>01</span><span>{t.intro.preamble}</span><span>{t.intro.gaze}</span></div>

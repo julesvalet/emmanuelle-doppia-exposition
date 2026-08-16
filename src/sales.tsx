@@ -6,15 +6,11 @@ type StoreStatusResponse = {
   serverTime: string
   salesOpenAt: string
   salesOpen: boolean
-  testStock: number
-  testAvailable: number
 }
 
 type SalesContextValue = {
   isSalesOpen: boolean
   remainingMs: number
-  testStock: number | null
-  testAvailable: number | null
   statusReady: boolean
   refreshStatus: () => Promise<void>
 }
@@ -24,8 +20,6 @@ const SalesContext = createContext<SalesContextValue | null>(null)
 export function SalesProvider({ children }: { children: ReactNode }) {
   const [clock, setClock] = useState(() => Date.now())
   const [serverOffset, setServerOffset] = useState(0)
-  const [testStock, setTestStock] = useState<number | null>(null)
-  const [testAvailable, setTestAvailable] = useState<number | null>(null)
   const [statusReady, setStatusReady] = useState(false)
 
   const refreshStatus = useCallback(async () => {
@@ -35,8 +29,6 @@ export function SalesProvider({ children }: { children: ReactNode }) {
       const data = await response.json() as StoreStatusResponse
       if (data.salesOpenAt !== SALES_OPEN_AT_ISO) throw new Error('Unexpected sales opening date')
       setServerOffset(Date.parse(data.serverTime) - Date.now())
-      setTestStock(data.testStock)
-      setTestAvailable(data.testAvailable)
     } catch (error) {
       // The UTC deadline still works independently of the browser timezone. Server endpoints
       // remain the authority for checkout if this non-critical status request is unavailable.
@@ -63,11 +55,9 @@ export function SalesProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SalesContextValue>(() => ({
     isSalesOpen,
     remainingMs,
-    testStock,
-    testAvailable,
     statusReady,
     refreshStatus,
-  }), [isSalesOpen, remainingMs, testStock, testAvailable, statusReady, refreshStatus])
+  }), [isSalesOpen, remainingMs, statusReady, refreshStatus])
 
   return <SalesContext.Provider value={value}>{children}</SalesContext.Provider>
 }

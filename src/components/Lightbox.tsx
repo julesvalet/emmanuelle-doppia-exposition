@@ -5,7 +5,6 @@ import { useImageZoom } from '../hooks/useImageZoom'
 import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import { useLanguage } from '../i18n'
 import { useInterfaceControls } from '../interfaceControls'
-import { useSales } from '../sales'
 
 type Props = {
   items: GalleryItem[]
@@ -24,7 +23,6 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
   const [selectedFinishId, setSelectedFinishId] = useState('')
   const zoom = useImageZoom(item?.id)
   const { addItem } = useCart()
-  const { isSalesOpen } = useSales()
   const [justAdded, setJustAdded] = useState(false)
 
   useEffect(() => {
@@ -76,7 +74,6 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
   }
 
   const handleAddToCart = () => {
-    if (!isSalesOpen) return
     addItem({
       key: `${item.order}-${selectedFormat.id}-${selectedFinish.id}`,
       artworkNumber: item.order,
@@ -201,8 +198,8 @@ export function Lightbox({ items, activeIndex, onChange }: Props) {
             <li>{t.shop.certificate}</li>
             <li>{t.shop.shipping}</li>
           </ul>
-          <button className="lightbox__preorder" type="button" onClick={handleAddToCart} disabled={!isSalesOpen}>
-            <span>{!isSalesOpen ? t.shop.opensMessage : justAdded ? t.shop.addedToCart : t.shop.addToCart}</span>
+          <button className="lightbox__preorder" type="button" onClick={handleAddToCart}>
+            <span>{justAdded ? t.shop.addedToCart : t.shop.addToCart}</span>
             <small>{currencyFormatter.format(selectedFinish.price)}</small>
           </button>
         </aside>
