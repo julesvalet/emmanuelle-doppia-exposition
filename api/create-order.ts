@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getAccessToken, paypalFetch, PaypalApiError } from './_lib/paypal.js'
+import { getAccessToken, paypalErrorDiagnostic, paypalFetch, PaypalApiError } from './_lib/paypal.js'
 import { priceCartLines, PricingError } from './_lib/pricing.js'
 import {
   arePublicSalesOpen,
@@ -79,8 +79,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ code: 'PROMO_INVALID', error: error.message })
     }
     if (error instanceof PaypalApiError) {
-      console.error('create-order: PayPal error', error.status, error.details)
-      return res.status(502).json({ error: 'La création de la commande PayPal a échoué.' })
+      const diagnostic = paypalErrorDiagnostic(error)
+      console.error('create-order: PayPal error', JSON.stringify(diagnostic))
+      return res.status(502).json({
+        error: 'La création de la commande PayPal a échoué.',
+        code: 'PAYPAL_CREATE_FAILED',
+        paypalIssue: diagnostic.details[0]?.issue,
+        paypalField: diagnostic.details[0]?.field,
+        paypalDebugId: diagnostic.debugId,
+      })
     }
     console.error('create-order: unexpected error', error)
     return res.status(500).json({ error: 'Erreur serveur inattendue.' })

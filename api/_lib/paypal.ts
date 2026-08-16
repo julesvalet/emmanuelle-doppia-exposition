@@ -15,6 +15,51 @@ export class PaypalApiError extends Error {
   }
 }
 
+type PaypalErrorDetail = {
+  issue?: unknown
+  description?: unknown
+  field?: unknown
+  location?: unknown
+}
+
+type PaypalErrorBody = {
+  name?: unknown
+  message?: unknown
+  debug_id?: unknown
+  details?: unknown
+}
+
+function stringOrUndefined(value: unknown) {
+  return typeof value === 'string' ? value : undefined
+}
+
+// Strict allow-list for diagnostics: credentials, OAuth tokens, request headers, payment
+// sources and customer data are never copied into logs or responses.
+export function paypalErrorDiagnostic(error: PaypalApiError) {
+  const body = error.details && typeof error.details === 'object'
+    ? error.details as PaypalErrorBody
+    : null
+  const details = Array.isArray(body?.details)
+    ? body.details.map((raw) => {
+      const detail = raw && typeof raw === 'object' ? raw as PaypalErrorDetail : {}
+      return {
+        issue: stringOrUndefined(detail.issue),
+        description: stringOrUndefined(detail.description),
+        field: stringOrUndefined(detail.field),
+        location: stringOrUndefined(detail.location),
+      }
+    })
+    : []
+
+  return {
+    status: error.status,
+    name: stringOrUndefined(body?.name),
+    message: stringOrUndefined(body?.message),
+    debugId: stringOrUndefined(body?.debug_id),
+    details,
+  }
+}
+
 export async function getAccessToken(): Promise<string> {
   const clientId = process.env.PAYPAL_CLIENT_ID
   const secret = process.env.PAYPAL_SECRET

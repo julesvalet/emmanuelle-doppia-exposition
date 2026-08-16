@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getAccessToken, paypalFetch, PaypalApiError } from './_lib/paypal.js'
+import { getAccessToken, paypalErrorDiagnostic, paypalFetch, PaypalApiError } from './_lib/paypal.js'
 import { arePublicSalesOpen, PREOPENING_PROMO_ORDER_MARKER } from './_lib/sales.js'
 
 type CaptureOrderResponse = {
@@ -103,7 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
   } catch (error) {
     if (error instanceof PaypalApiError) {
-      console.error('capture-order: PayPal error', error.status, error.details)
+      console.error('capture-order: PayPal error', JSON.stringify(paypalErrorDiagnostic(error)))
       return res.status(502).json({ error: 'La capture du paiement PayPal a échoué.' })
     }
     console.error('capture-order: unexpected error', error)
