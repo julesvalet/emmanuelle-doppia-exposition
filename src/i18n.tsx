@@ -98,8 +98,7 @@ export const translations = {
       emptyLabel: 'La galerie ouvrira prochainement',
     },
     contact: {
-      headingFirst: 'Entrer',
-      headingSecond: 'en relation',
+      heading: 'Contacter',
       emailLabel: 'E-mail',
       instagramLabel: 'Instagram',
     },
@@ -301,8 +300,7 @@ export const translations = {
       emptyLabel: 'The gallery will open soon',
     },
     contact: {
-      headingFirst: 'Get',
-      headingSecond: 'in touch',
+      heading: 'Contact',
       emailLabel: 'Email',
       instagramLabel: 'Instagram',
     },

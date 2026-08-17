@@ -186,7 +186,7 @@ function App() {
 
         <section className="contact" id="contact" aria-labelledby="contact-title" data-chapter>
           <div className="section-kicker reveal"><span>04</span><span>Contact</span><span>{site.location}</span></div>
-          <h2 className="reveal" id="contact-title">{t.contact.headingFirst}<br /><em>{t.contact.headingSecond}</em></h2>
+          <h2 className="reveal" id="contact-title">{t.contact.heading}</h2>
           <ul className="contact__links reveal">
             <li>
               <span>{t.contact.emailLabel}</span>
