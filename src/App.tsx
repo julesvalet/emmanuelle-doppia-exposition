@@ -187,7 +187,16 @@ function App() {
         <section className="contact" id="contact" aria-labelledby="contact-title" data-chapter>
           <div className="section-kicker reveal"><span>04</span><span>Contact</span><span>{site.location}</span></div>
           <h2 className="reveal" id="contact-title">{t.contact.headingFirst}<br /><em>{t.contact.headingSecond}</em></h2>
-          <p className="reveal">{t.contact.note}</p>
+          <ul className="contact__links reveal">
+            <li>
+              <span>{t.contact.emailLabel}</span>
+              <a href={`mailto:${site.contactEmail}`} data-cursor={t.common.go}>{site.contactEmail}</a>
+            </li>
+            <li>
+              <span>{t.contact.instagramLabel}</span>
+              <a href={site.instagramUrl} target="_blank" rel="noopener noreferrer" data-cursor={t.common.go}>{site.instagramHandle}</a>
+            </li>
+          </ul>
         </section>
       </main>
       <footer className="footer">

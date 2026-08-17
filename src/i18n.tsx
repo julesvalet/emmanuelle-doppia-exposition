@@ -100,7 +100,8 @@ export const translations = {
     contact: {
       headingFirst: 'Entrer',
       headingSecond: 'en relation',
-      note: 'Les coordonnées de l’atelier seront publiées à l’ouverture de l’exposition.',
+      emailLabel: 'E-mail',
+      instagramLabel: 'Instagram',
     },
     footer: { backToTop: 'Retour en haut ↑', cursorTop: 'Haut' },
     viewer: {
@@ -157,6 +158,17 @@ export const translations = {
       promoSingleItem: 'Le code est valable pour un seul tirage, en un seul exemplaire.',
       promoRequired: 'Les précommandes ne sont pas encore ouvertes. Un code valide permet de commander maintenant.',
       paypalMerchantRestricted: 'Le compte marchand PayPal Live ne peut pas recevoir de paiement pour le moment. Veuillez réessayer après sa réactivation.',
+      shippingTitle: 'Adresse de livraison',
+      shippingAddressLabel: 'Adresse (rue, numéro)',
+      shippingPostalCodeLabel: 'Code postal',
+      shippingCityLabel: 'Ville',
+      shippingCountryLabel: 'Pays',
+      shippingFloorLabel: 'Étage',
+      shippingDoorNameLabel: 'Nom sur la porte / boîte aux lettres',
+      shippingOptional: 'si applicable',
+      shippingDoorNameHint: 'Facultatif — pour faciliter la livraison',
+      shippingContinue: 'Continuer vers le paiement',
+      backToShipping: 'Retour à l’adresse de livraison',
     },
     account: {
       account: 'Compte',
@@ -190,6 +202,7 @@ export const translations = {
       errorEmailInUse: 'Un compte existe déjà avec cette adresse e-mail.',
       errorPasswordTooShort: 'Le mot de passe doit contenir au moins 6 caractères.',
       missingConfig: 'Les comptes clients ne sont pas encore configurés sur ce déploiement.',
+      signUpDeliveryNote: 'Lors de la création de votre compte, merci de bien vouloir saisir vos coordonnées de livraison.',
     },
     accessibility: {
       artworkAlt: 'photographie de la série',
@@ -290,7 +303,8 @@ export const translations = {
     contact: {
       headingFirst: 'Get',
       headingSecond: 'in touch',
-      note: 'The studio’s contact details will be published when the exhibition opens.',
+      emailLabel: 'Email',
+      instagramLabel: 'Instagram',
     },
     footer: { backToTop: 'Back to top ↑', cursorTop: 'Top' },
     viewer: {
@@ -347,6 +361,17 @@ export const translations = {
       promoSingleItem: 'The code is valid for one print, in a quantity of one.',
       promoRequired: 'Pre-orders are not open yet. A valid code lets you order now.',
       paypalMerchantRestricted: 'The PayPal Live merchant account cannot receive payments at the moment. Please try again after it has been reactivated.',
+      shippingTitle: 'Delivery address',
+      shippingAddressLabel: 'Address (street, number)',
+      shippingPostalCodeLabel: 'Postal code',
+      shippingCityLabel: 'City',
+      shippingCountryLabel: 'Country',
+      shippingFloorLabel: 'Floor',
+      shippingDoorNameLabel: 'Name on the door / mailbox',
+      shippingOptional: 'if applicable',
+      shippingDoorNameHint: 'Optional — to help with delivery',
+      shippingContinue: 'Continue to payment',
+      backToShipping: 'Back to delivery address',
     },
     account: {
       account: 'Account',
@@ -380,6 +405,7 @@ export const translations = {
       errorEmailInUse: 'An account already exists with this email address.',
       errorPasswordTooShort: 'The password must be at least 6 characters long.',
       missingConfig: 'Customer accounts are not yet configured on this deployment.',
+      signUpDeliveryNote: 'When creating your account, please make sure to enter your delivery details.',
     },
     accessibility: {
       artworkAlt: 'photograph from the series',

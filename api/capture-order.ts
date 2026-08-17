@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { EmailError, sendOrderNotificationEmail } from './_lib/email.js'
 import { getAccessToken, paypalErrorDiagnostic, paypalFetch, PaypalApiError } from './_lib/paypal.js'
 import { arePublicSalesOpen, PREOPENING_PROMO_ORDER_MARKER } from './_lib/sales.js'
+import { parseShippingAddress } from './_lib/shipping.js'
 
 type CaptureOrderResponse = {
   id: string
@@ -12,6 +14,11 @@ type CaptureOrderResponse = {
   purchase_units?: Array<{
     custom_id?: string
     amount?: { currency_code: string; value: string }
+    items?: Array<{
+      name: string
+      quantity: string
+      unit_amount?: { currency_code: string; value: string }
+    }>
     payments?: {
       captures?: Array<{
         id: string
@@ -88,6 +95,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!isOfficialPromoPayment) {
         console.error('capture-order: invalid promotional order payload', orderID)
         return res.status(409).json({ code: 'PROMO_INVALID', error: 'La commande promotionnelle ne correspond pas au prix officiel.' })
+      }
+    }
+
+    // The payment already succeeded above — a notification failure must never turn a
+    // successful purchase into an error response for the customer.
+    try {
+      await sendOrderNotificationEmail({
+        orderID: capture.id,
+        captureID: captureDetail?.id,
+        amountValue: captureDetail?.amount?.value ?? purchaseUnit?.amount?.value ?? '0.00',
+        amountCurrency: captureDetail?.amount?.currency_code ?? purchaseUnit?.amount?.currency_code ?? 'EUR',
+        capturedAt: new Date(),
+        customerEmail: capture.payer?.email_address,
+        items: (purchaseUnit?.items ?? []).map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          unitAmount: item.unit_amount?.value ?? '',
+          currency: item.unit_amount?.currency_code ?? 'EUR',
+        })),
+        shipping: parseShippingAddress(body?.shippingAddress),
+      })
+    } catch (emailError) {
+      if (emailError instanceof EmailError) {
+        console.error('capture-order: order notification email failed', emailError.status, emailError.message)
+      } else {
+        console.error('capture-order: order notification email failed', emailError)
       }
     }
 

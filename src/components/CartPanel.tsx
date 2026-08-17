@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
 import type { OnApproveData } from '@paypal/paypal-js'
 import { useCart, type CartItem } from '../cart'
@@ -9,13 +9,31 @@ import { useSales } from '../sales'
 
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID
 
-type Step = 'cart' | 'checkout' | 'success' | 'error'
+type Step = 'cart' | 'shipping' | 'checkout' | 'success' | 'error'
 
 type OrderSummary = {
   orderID: string
   items: CartItem[]
   total: number
   promoApplied: boolean
+}
+
+export type ShippingAddress = {
+  address: string
+  postalCode: string
+  city: string
+  country: string
+  floor: string
+  doorName: string
+}
+
+const emptyShippingAddress: ShippingAddress = {
+  address: '',
+  postalCode: '',
+  city: '',
+  country: '',
+  floor: '',
+  doorName: '',
 }
 
 class RequestError extends Error {
@@ -55,6 +73,7 @@ export function CartPanel() {
   const [promoInput, setPromoInput] = useState('')
   const [promoApplied, setPromoApplied] = useState(false)
   const [promoMessage, setPromoMessage] = useState('')
+  const [shipping, setShipping] = useState<ShippingAddress>(emptyShippingAddress)
 
   useModalScrollLock(isOpen)
 
@@ -104,9 +123,14 @@ export function CartPanel() {
 
   if (!isOpen) return null
 
-  const goToCheckout = () => {
+  const goToShipping = () => {
     if (!checkoutAllowed) return
     setNotice('')
+    setStep('shipping')
+  }
+
+  const handleShippingSubmit = (event: FormEvent) => {
+    event.preventDefault()
     setStep('checkout')
   }
 
@@ -147,9 +171,10 @@ export function CartPanel() {
 
   const completeApprovedOrder = async (orderID: string) => {
     try {
-      await requestJson('/api/capture-order', { orderID })
+      await requestJson('/api/capture-order', { orderID, shippingAddress: shipping })
       setSummary({ orderID, items, total: pendingTotal ?? checkoutTotal, promoApplied: activePromo || pendingTotal === PREOPENING_PROMO_PRICE })
       clearCart()
+      setShipping(emptyShippingAddress)
       await refreshStatus()
       setPendingOrderID(null)
       setPendingTotal(null)
@@ -229,6 +254,80 @@ export function CartPanel() {
           </div>
         )}
 
+        {step === 'shipping' && (
+          <div className="cart-panel__body">
+            <form className="account-panel__form" onSubmit={handleShippingSubmit}>
+              <div className="account-panel__field">
+                <label htmlFor="shipping-address">{t.cart.shippingAddressLabel}</label>
+                <input
+                  id="shipping-address"
+                  type="text"
+                  autoComplete="street-address"
+                  required
+                  value={shipping.address}
+                  onChange={(event) => setShipping((current) => ({ ...current, address: event.target.value }))}
+                />
+              </div>
+              <div className="account-panel__field">
+                <label htmlFor="shipping-postal-code">{t.cart.shippingPostalCodeLabel}</label>
+                <input
+                  id="shipping-postal-code"
+                  type="text"
+                  autoComplete="postal-code"
+                  required
+                  value={shipping.postalCode}
+                  onChange={(event) => setShipping((current) => ({ ...current, postalCode: event.target.value }))}
+                />
+              </div>
+              <div className="account-panel__field">
+                <label htmlFor="shipping-city">{t.cart.shippingCityLabel}</label>
+                <input
+                  id="shipping-city"
+                  type="text"
+                  autoComplete="address-level2"
+                  required
+                  value={shipping.city}
+                  onChange={(event) => setShipping((current) => ({ ...current, city: event.target.value }))}
+                />
+              </div>
+              <div className="account-panel__field">
+                <label htmlFor="shipping-country">{t.cart.shippingCountryLabel}</label>
+                <input
+                  id="shipping-country"
+                  type="text"
+                  autoComplete="country-name"
+                  required
+                  value={shipping.country}
+                  onChange={(event) => setShipping((current) => ({ ...current, country: event.target.value }))}
+                />
+              </div>
+              <div className="account-panel__field">
+                <label htmlFor="shipping-floor">{t.cart.shippingFloorLabel} <small>({t.cart.shippingOptional})</small></label>
+                <input
+                  id="shipping-floor"
+                  type="text"
+                  autoComplete="off"
+                  value={shipping.floor}
+                  onChange={(event) => setShipping((current) => ({ ...current, floor: event.target.value }))}
+                />
+              </div>
+              <div className="account-panel__field">
+                <label htmlFor="shipping-door-name">{t.cart.shippingDoorNameLabel} <small>({t.cart.shippingOptional})</small></label>
+                <input
+                  id="shipping-door-name"
+                  type="text"
+                  autoComplete="off"
+                  value={shipping.doorName}
+                  onChange={(event) => setShipping((current) => ({ ...current, doorName: event.target.value }))}
+                />
+                <small>{t.cart.shippingDoorNameHint}</small>
+              </div>
+              <button type="submit" className="cart-panel__checkout">{t.cart.shippingContinue}</button>
+              <button type="button" className="cart-panel__back" onClick={() => setStep('cart')}>{t.cart.backToCart}</button>
+            </form>
+          </div>
+        )}
+
         {step === 'checkout' && (
           <div className="cart-panel__body">
             <ul className="cart-panel__summary-list">
@@ -265,7 +364,7 @@ export function CartPanel() {
             ) : (
               <p className="cart-panel__notice">{t.cart.missingClientId}</p>
             )}
-            <button type="button" className="cart-panel__back" onClick={() => setStep('cart')}>{t.cart.backToCart}</button>
+            <button type="button" className="cart-panel__back" onClick={() => setStep('shipping')}>{t.cart.backToShipping}</button>
           </div>
         )}
 
@@ -340,7 +439,7 @@ export function CartPanel() {
               <span>{t.cart.total}</span>
               <strong>{currencyFormatter.format(checkoutTotal)}</strong>
             </div>
-            <button type="button" className="cart-panel__checkout" onClick={goToCheckout} disabled={itemCount === 0 || !checkoutAllowed}>
+            <button type="button" className="cart-panel__checkout" onClick={goToShipping} disabled={itemCount === 0 || !checkoutAllowed}>
               {t.cart.checkout}
             </button>
           </footer>

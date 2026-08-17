@@ -228,6 +228,7 @@ export function AccountPanel() {
                   onChange={(event) => setPassword(event.target.value)}
                 />
               </div>
+              <p className="account-panel__hint">{t.account.signUpDeliveryNote}</p>
               <button type="submit" className="cart-panel__checkout" disabled={submitting}>{t.account.signUpSubmit}</button>
               <p className="account-panel__switch">
                 {t.account.alreadyAccount}{' '}
