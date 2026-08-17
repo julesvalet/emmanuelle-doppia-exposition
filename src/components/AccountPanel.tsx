@@ -236,8 +236,12 @@ export function AccountPanel() {
                     <ul className="cart-panel__summary-list">
                       {order.items.map((item, index) => (
                         <li key={index}>
-                          <span>{item.quantity} × {item.name}</span>
-                          <strong>{item.unitAmount} {item.currency}</strong>
+                          <span>
+                            {item.quantity} × N° {item.artworkNumber} — {item.title} — {item.formatLabel}
+                            <br />
+                            <small>{item.dibond ? t.account.orderDibondYes : t.account.orderDibondNo}</small>
+                          </span>
+                          <strong>{currencyFormatter.format(item.lineTotal)}</strong>
                         </li>
                       ))}
                     </ul>

@@ -77,6 +77,7 @@ export function CartPanel() {
   const [summary, setSummary] = useState<OrderSummary | null>(null)
   const [pendingOrderID, setPendingOrderID] = useState<string | null>(null)
   const [pendingTotal, setPendingTotal] = useState<number | null>(null)
+  const [pendingItems, setPendingItems] = useState<CartItem[] | null>(null)
   const [promoInput, setPromoInput] = useState('')
   const [promoApplied, setPromoApplied] = useState(false)
   const [promoMessage, setPromoMessage] = useState('')
@@ -230,6 +231,10 @@ export function CartPanel() {
   const createOrder = async () => {
     setPendingOrderID(null)
     setPendingTotal(checkoutTotal)
+    // Snapshot the cart at the moment payment starts, so the receipt (email + order history)
+    // reflects exactly what was charged even if the cart's live state somehow changes before
+    // PayPal's approval callback fires.
+    setPendingItems(items)
     try {
       const data = await requestJson('/api/create-order', {
         items: items.map((item) => ({
@@ -249,13 +254,25 @@ export function CartPanel() {
 
   const completeApprovedOrder = async (orderID: string) => {
     try {
-      await requestJson('/api/capture-order', { orderID, shippingAddress: shipping, accessToken: session?.access_token })
-      setSummary({ orderID, items, total: pendingTotal ?? checkoutTotal, promoApplied: activePromo || pendingTotal === PROMO_PRICE })
+      const capturedItems = pendingItems ?? items
+      await requestJson('/api/capture-order', {
+        orderID,
+        shippingAddress: shipping,
+        accessToken: session?.access_token,
+        items: capturedItems.map((item) => ({
+          artworkNumber: item.artworkNumber,
+          formatId: item.formatId,
+          finishId: item.finishId,
+          quantity: item.quantity,
+        })),
+      })
+      setSummary({ orderID, items: capturedItems, total: pendingTotal ?? checkoutTotal, promoApplied: activePromo || pendingTotal === PROMO_PRICE })
       clearCart()
       setShipping(emptyShippingAddress)
       await refreshStatus()
       setPendingOrderID(null)
       setPendingTotal(null)
+      setPendingItems(null)
       setStep('success')
     } catch (error) {
       setErrorMessage(localizedRequestError(error))

@@ -2,11 +2,17 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from './auth'
 import { supabase } from './supabase'
 
+// Matches the structured lines api/capture-order.ts writes to "articles" (see
+// api/_lib/email.ts's OrderNotificationLine) — re-derived server-side from the catalogue at
+// capture time, not from whatever the client happened to have in its cart.
 export type OrderItem = {
-  name: string
-  quantity: string
-  unitAmount: string
-  currency: string
+  artworkNumber: number
+  title: string
+  formatLabel: string
+  dibond: boolean
+  quantity: number
+  unitPrice: number
+  lineTotal: number
 }
 
 export type Order = {

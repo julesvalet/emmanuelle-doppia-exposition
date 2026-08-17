@@ -12,11 +12,17 @@ export class EmailError extends Error {
   }
 }
 
-export type OrderNotificationItem = {
-  name: string
-  quantity: string
-  unitAmount: string
-  currency: string
+// One structured line per artwork ordered — built server-side from the priced catalogue lines
+// (api/_lib/pricing.ts), never from PayPal's flattened item name string, so the artist always
+// gets the exact photo number, format and Dibond option, not a truncated free-text summary.
+export type OrderNotificationLine = {
+  artworkNumber: number
+  title: string
+  formatLabel: string
+  dibond: boolean
+  quantity: number
+  unitPrice: number
+  lineTotal: number
 }
 
 export type OrderNotificationParams = {
@@ -24,9 +30,12 @@ export type OrderNotificationParams = {
   captureID?: string
   amountValue: string
   amountCurrency: string
+  nominalTotal: number
+  promoApplied: boolean
   capturedAt: Date
+  customerName?: string
   customerEmail?: string
-  items: OrderNotificationItem[]
+  lines: OrderNotificationLine[]
   shipping: ShippingAddress | null
 }
 
@@ -34,6 +43,10 @@ function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] ?? char
   ))
+}
+
+function formatEuros(value: number): string {
+  return `${value.toFixed(2).replace('.', ',')} €`
 }
 
 function shippingLines(shipping: ShippingAddress | null): string[] {
@@ -46,6 +59,11 @@ function shippingLines(shipping: ShippingAddress | null): string[] {
   if (shipping.floor) lines.push(`Étage : ${shipping.floor}`)
   if (shipping.doorName) lines.push(`Nom sur la porte / boîte aux lettres : ${shipping.doorName}`)
   return lines
+}
+
+function lineDescription(line: OrderNotificationLine): string {
+  return `N° ${line.artworkNumber} — ${line.title} — Format ${line.formatLabel} — Dibond : ${line.dibond ? 'Oui' : 'Non'} — `
+    + `Qté ${line.quantity} — Prix unitaire ${formatEuros(line.unitPrice)} — Sous-total ${formatEuros(line.lineTotal)}`
 }
 
 // Never lets a notification failure affect the payment response — the capture has already
@@ -65,39 +83,48 @@ export async function sendOrderNotificationEmail(params: OrderNotificationParams
     timeStyle: 'short',
   })
 
-  const itemLines = params.items.map((item) => `${item.quantity} × ${item.name} — ${item.unitAmount} ${item.currency}`)
+  const lineDescriptions = params.lines.map(lineDescription)
   const addressLines = shippingLines(params.shipping)
   const customerEmail = params.customerEmail || 'Non communiqué par PayPal.'
+  const customerName = params.customerName || 'Non communiqué par PayPal.'
+  const discount = params.promoApplied ? Math.max(0, params.nominalTotal - Number(params.amountValue)) : 0
 
   const text = [
     'Nouvelle commande confirmée',
     '',
-    `Montant : ${params.amountValue} ${params.amountCurrency}`,
     `Date : ${formattedDate}`,
     `Commande PayPal : ${params.orderID}${params.captureID ? ` (capture ${params.captureID})` : ''}`,
+    `Client : ${customerName}`,
+    `Email client : ${customerEmail}`,
     '',
     'Détail de la commande :',
-    ...itemLines.map((line) => `- ${line}`),
+    ...lineDescriptions.map((line) => `- ${line}`),
+    '',
+    `Sous-total catalogue : ${formatEuros(params.nominalTotal)}`,
+    ...(params.promoApplied ? [`Réduction (code promo) : -${formatEuros(discount)}`] : []),
+    `Total payé : ${params.amountValue} ${params.amountCurrency}`,
     '',
     'Adresse de livraison :',
     ...addressLines,
-    '',
-    `Contact client : ${customerEmail}`,
   ].join('\n')
 
   const html = `
     <h2>Nouvelle commande confirmée</h2>
     <p>
-      <strong>Montant :</strong> ${escapeHtml(params.amountValue)} ${escapeHtml(params.amountCurrency)}<br>
       <strong>Date :</strong> ${escapeHtml(formattedDate)}<br>
-      <strong>Commande PayPal :</strong> ${escapeHtml(params.orderID)}${params.captureID ? ` (capture ${escapeHtml(params.captureID)})` : ''}
+      <strong>Commande PayPal :</strong> ${escapeHtml(params.orderID)}${params.captureID ? ` (capture ${escapeHtml(params.captureID)})` : ''}<br>
+      <strong>Client :</strong> ${escapeHtml(customerName)}<br>
+      <strong>Email client :</strong> ${escapeHtml(customerEmail)}
     </p>
     <h3>Détail de la commande</h3>
-    <ul>${itemLines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>
+    <ul>${lineDescriptions.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>
+    <p>
+      <strong>Sous-total catalogue :</strong> ${escapeHtml(formatEuros(params.nominalTotal))}<br>
+      ${params.promoApplied ? `<strong>Réduction (code promo) :</strong> -${escapeHtml(formatEuros(discount))}<br>` : ''}
+      <strong>Total payé :</strong> ${escapeHtml(params.amountValue)} ${escapeHtml(params.amountCurrency)}
+    </p>
     <h3>Adresse de livraison</h3>
     <p>${addressLines.map(escapeHtml).join('<br>')}</p>
-    <h3>Contact client</h3>
-    <p>${escapeHtml(customerEmail)}</p>
   `
 
   const response = await fetch(RESEND_API_URL, {
