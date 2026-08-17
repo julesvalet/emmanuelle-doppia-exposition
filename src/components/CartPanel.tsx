@@ -4,7 +4,7 @@ import type { OnApproveData } from '@paypal/paypal-js'
 import { useCart, type CartItem } from '../cart'
 import { useLanguage } from '../i18n'
 import { useModalScrollLock } from '../hooks/useModalScrollLock'
-import { PREOPENING_PROMO_CODE, PREOPENING_PROMO_PRICE } from '../data/sales'
+import { PROMO_CODE, PROMO_PRICE, PROMO_VALID_UNTIL_MS } from '../data/sales'
 import { useSales } from '../sales'
 
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID
@@ -78,14 +78,16 @@ export function CartPanel() {
   useModalScrollLock(isOpen)
 
   const promoEligibleCart = items.length === 1 && itemCount === 1
-  const activePromo = !isSalesOpen && promoApplied && promoEligibleCart
+  const promoWindowOpen = Date.now() < PROMO_VALID_UNTIL_MS
+  const activePromo = promoApplied && promoEligibleCart && promoWindowOpen
   const checkoutAllowed = isSalesOpen || activePromo
-  const checkoutTotal = activePromo ? PREOPENING_PROMO_PRICE : total
+  const checkoutTotal = activePromo ? PROMO_PRICE : total
   const checkoutNotice = !isSalesOpen && !activePromo ? t.cart.promoRequired : ''
 
   const localizedRequestError = (error: unknown) => {
     if (error instanceof RequestError) {
       if (error.code === 'SALES_NOT_OPEN') return t.shop.opensMessage
+      if (error.code === 'PROMO_EXPIRED') return t.cart.promoExpired
       if (error.code === 'PROMO_INVALID') return t.cart.promoInvalid
       if (error.code === 'PAYPAL_PAYEE_RESTRICTED') return t.cart.paypalMerchantRestricted
     }
@@ -93,10 +95,10 @@ export function CartPanel() {
   }
 
   useEffect(() => {
-    if (!promoApplied || (promoEligibleCart && !isSalesOpen)) return
+    if (!promoApplied || (promoEligibleCart && promoWindowOpen)) return
     setPromoApplied(false)
-    setPromoMessage('')
-  }, [isSalesOpen, promoApplied, promoEligibleCart])
+    setPromoMessage(promoWindowOpen ? '' : t.cart.promoExpired)
+  }, [promoApplied, promoEligibleCart, promoWindowOpen, t.cart.promoExpired])
 
   useEffect(() => {
     if (isOpen) return
@@ -135,14 +137,19 @@ export function CartPanel() {
   }
 
   const applyPromo = () => {
+    if (promoInput.trim().toLowerCase() !== PROMO_CODE) {
+      setPromoApplied(false)
+      setPromoMessage(t.cart.promoInvalid)
+      return
+    }
+    if (!promoWindowOpen) {
+      setPromoApplied(false)
+      setPromoMessage(t.cart.promoExpired)
+      return
+    }
     if (!promoEligibleCart) {
       setPromoApplied(false)
       setPromoMessage(t.cart.promoSingleItem)
-      return
-    }
-    if (promoInput.trim().toLowerCase() !== PREOPENING_PROMO_CODE) {
-      setPromoApplied(false)
-      setPromoMessage(t.cart.promoInvalid)
       return
     }
     setPromoApplied(true)
@@ -172,7 +179,7 @@ export function CartPanel() {
   const completeApprovedOrder = async (orderID: string) => {
     try {
       await requestJson('/api/capture-order', { orderID, shippingAddress: shipping })
-      setSummary({ orderID, items, total: pendingTotal ?? checkoutTotal, promoApplied: activePromo || pendingTotal === PREOPENING_PROMO_PRICE })
+      setSummary({ orderID, items, total: pendingTotal ?? checkoutTotal, promoApplied: activePromo || pendingTotal === PROMO_PRICE })
       clearCart()
       setShipping(emptyShippingAddress)
       await refreshStatus()
@@ -334,7 +341,7 @@ export function CartPanel() {
               {items.map((item) => (
                 <li key={item.key}>
                   <span>{item.quantity} × {item.title} — {item.formatLabel} ({item.finishLabel[language]})</span>
-                  <strong>{currencyFormatter.format(activePromo ? PREOPENING_PROMO_PRICE : item.unitPrice * item.quantity)}</strong>
+                  <strong>{currencyFormatter.format(activePromo ? PROMO_PRICE : item.unitPrice * item.quantity)}</strong>
                 </li>
               ))}
             </ul>
@@ -379,7 +386,7 @@ export function CartPanel() {
               {summary.items.map((item) => (
                 <li key={item.key}>
                   <span>{item.quantity} × {item.title} — {item.formatLabel} ({item.finishLabel[language]})</span>
-                  <strong>{currencyFormatter.format(summary.promoApplied ? PREOPENING_PROMO_PRICE : item.unitPrice * item.quantity)}</strong>
+                  <strong>{currencyFormatter.format(summary.promoApplied ? PROMO_PRICE : item.unitPrice * item.quantity)}</strong>
                 </li>
               ))}
             </ul>
@@ -407,33 +414,31 @@ export function CartPanel() {
 
         {step === 'cart' && items.length > 0 && (
           <footer className="cart-panel__footer">
-            {!isSalesOpen && (
-              <div className="cart-panel__promo">
-                <label htmlFor="cart-promo-code">{t.cart.promoLabel}</label>
-                <div>
-                  <input
-                    id="cart-promo-code"
-                    type="text"
-                    value={promoInput}
-                    placeholder={t.cart.promoPlaceholder}
-                    autoComplete="off"
-                    onChange={(event) => {
-                      setPromoInput(event.target.value)
-                      setPromoApplied(false)
-                      setPromoMessage('')
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault()
-                        applyPromo()
-                      }
-                    }}
-                  />
-                  <button type="button" onClick={applyPromo}>{t.cart.promoApply}</button>
-                </div>
-                {promoMessage && <small className={promoApplied ? 'is-valid' : 'is-invalid'}>{promoMessage}</small>}
+            <div className="cart-panel__promo">
+              <label htmlFor="cart-promo-code">{t.cart.promoLabel}</label>
+              <div>
+                <input
+                  id="cart-promo-code"
+                  type="text"
+                  value={promoInput}
+                  placeholder={t.cart.promoPlaceholder}
+                  autoComplete="off"
+                  onChange={(event) => {
+                    setPromoInput(event.target.value)
+                    setPromoApplied(false)
+                    setPromoMessage('')
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      applyPromo()
+                    }
+                  }}
+                />
+                <button type="button" onClick={applyPromo}>{t.cart.promoApply}</button>
               </div>
-            )}
+              {promoMessage && <small className={promoApplied ? 'is-valid' : 'is-invalid'}>{promoMessage}</small>}
+            </div>
             {checkoutNotice && <p className="cart-panel__notice">{checkoutNotice}</p>}
             <div className="cart-panel__total">
               <span>{t.cart.total}</span>

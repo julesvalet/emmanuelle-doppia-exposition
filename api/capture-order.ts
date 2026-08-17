@@ -1,8 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { EmailError, sendOrderNotificationEmail } from './_lib/email.js'
+import { centsToPaypalValue } from './_lib/money.js'
 import { getAccessToken, paypalErrorDiagnostic, paypalFetch, PaypalApiError } from './_lib/paypal.js'
-import { arePublicSalesOpen, PREOPENING_PROMO_ORDER_MARKER } from './_lib/sales.js'
+import { arePublicSalesOpen, PROMO_ORDER_MARKER, PROMO_PRICE } from './_lib/sales.js'
 import { parseShippingAddress } from './_lib/shipping.js'
+
+const PROMO_PRICE_VALUE = centsToPaypalValue(Math.round(PROMO_PRICE * 100))
 
 type CaptureOrderResponse = {
   id: string
@@ -44,11 +47,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const accessToken = await getAccessToken()
     const orderPath = `/v2/checkout/orders/${encodeURIComponent(orderID)}`
     let capture = await paypalFetch<CaptureOrderResponse>(orderPath, accessToken)
-    const isPromoOrder = capture.purchase_units?.[0]?.custom_id === PREOPENING_PROMO_ORDER_MARKER
+    const isPromoOrder = capture.purchase_units?.[0]?.custom_id === PROMO_ORDER_MARKER
 
     if (isPromoOrder) {
       const orderAmount = capture.purchase_units?.[0]?.amount
-      if (orderAmount?.currency_code !== 'EUR' || orderAmount.value !== '1.00') {
+      if (orderAmount?.currency_code !== 'EUR' || orderAmount.value !== PROMO_PRICE_VALUE) {
         return res.status(409).json({ code: 'PROMO_INVALID', error: 'La commande promotionnelle ne correspond pas au prix officiel.' })
       }
     }
@@ -89,7 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (isPromoOrder) {
       const isOfficialPromoPayment = captureDetail?.amount?.currency_code === 'EUR'
-        && captureDetail.amount.value === '1.00'
+        && captureDetail.amount.value === PROMO_PRICE_VALUE
         && typeof captureDetail.id === 'string'
 
       if (!isOfficialPromoPayment) {

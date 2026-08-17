@@ -4,10 +4,11 @@ import { getAccessToken, paypalErrorDiagnostic, paypalFetch, PaypalApiError } fr
 import { priceCartLines, PricingError } from './_lib/pricing.js'
 import {
   arePublicSalesOpen,
-  isPreopeningPromoCode,
-  PREOPENING_PROMO_ORDER_MARKER,
-  PREOPENING_PROMO_PRICE,
+  checkPromoCode,
+  PROMO_ORDER_MARKER,
+  PROMO_PRICE,
   PromoCodeError,
+  PromoExpiredError,
   SalesClosedError,
 } from './_lib/sales.js'
 
@@ -21,9 +22,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
     const { lines, totalCents: catalogueTotalCents } = priceCartLines(body?.items)
     const promoWasSubmitted = typeof body?.promoCode === 'string' && body.promoCode.trim() !== ''
-    const promoApplied = isPreopeningPromoCode(body?.promoCode)
+    const promoStatus = checkPromoCode(body?.promoCode)
+    const promoApplied = promoStatus === 'valid'
 
-    if (promoWasSubmitted && !promoApplied) {
+    if (promoWasSubmitted && promoStatus === 'expired') {
+      throw new PromoExpiredError('Ce code promotionnel n’était valable que le 17 août 2026. Il n’est plus disponible.')
+    }
+    if (promoWasSubmitted && promoStatus === 'invalid') {
       throw new PromoCodeError('Ce code promotionnel est invalide ou a expiré.')
     }
 
@@ -32,11 +37,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (promoApplied && (lines.length !== 1 || lines[0].quantity !== 1)) {
-      throw new PromoCodeError('Le code teste07 est valable pour un seul tirage, en un seul exemplaire.')
+      throw new PromoCodeError('Ce code promotionnel est valable pour un seul tirage, en un seul exemplaire.')
     }
 
     const finalTotalCents = promoApplied
-      ? Math.round(PREOPENING_PROMO_PRICE * 100)
+      ? Math.round(PROMO_PRICE * 100)
       : catalogueTotalCents
     const amount = buildPaypalAmount(catalogueTotalCents, finalTotalCents)
 
@@ -46,7 +51,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({
         intent: 'CAPTURE',
         purchase_units: [{
-          custom_id: promoApplied ? PREOPENING_PROMO_ORDER_MARKER : 'photographic-prints',
+          custom_id: promoApplied ? PROMO_ORDER_MARKER : 'photographic-prints',
           amount,
           items: lines.map((line) => ({
             name: `${line.title} — ${line.formatLabel} (${line.finishLabel})`.slice(0, 127),
@@ -69,6 +74,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (error instanceof SalesClosedError) {
       return res.status(403).json({ code: 'SALES_NOT_OPEN', error: error.message })
+    }
+    if (error instanceof PromoExpiredError) {
+      return res.status(400).json({ code: 'PROMO_EXPIRED', error: error.message })
     }
     if (error instanceof PromoCodeError) {
       return res.status(400).json({ code: 'PROMO_INVALID', error: error.message })
