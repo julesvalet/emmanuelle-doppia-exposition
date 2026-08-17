@@ -4,6 +4,7 @@ import { centsToPaypalValue } from './_lib/money.js'
 import { getAccessToken, paypalErrorDiagnostic, paypalFetch, PaypalApiError } from './_lib/paypal.js'
 import { arePublicSalesOpen, PROMO_ORDER_MARKER, PROMO_PRICE } from './_lib/sales.js'
 import { parseShippingAddress } from './_lib/shipping.js'
+import { getUserFromAccessToken, supabaseAdmin } from './_lib/supabase.js'
 
 const PROMO_PRICE_VALUE = centsToPaypalValue(Math.round(PROMO_PRICE * 100))
 
@@ -101,29 +102,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    const resolvedAmountValue = captureDetail?.amount?.value ?? purchaseUnit?.amount?.value ?? '0.00'
+    const resolvedAmountCurrency = captureDetail?.amount?.currency_code ?? purchaseUnit?.amount?.currency_code ?? 'EUR'
+    const orderItems = (purchaseUnit?.items ?? []).map((item) => ({
+      name: item.name,
+      quantity: item.quantity,
+      unitAmount: item.unit_amount?.value ?? '',
+      currency: item.unit_amount?.currency_code ?? 'EUR',
+    }))
+    const shippingAddress = parseShippingAddress(body?.shippingAddress)
+
     // The payment already succeeded above — a notification failure must never turn a
     // successful purchase into an error response for the customer.
     try {
       await sendOrderNotificationEmail({
         orderID: capture.id,
         captureID: captureDetail?.id,
-        amountValue: captureDetail?.amount?.value ?? purchaseUnit?.amount?.value ?? '0.00',
-        amountCurrency: captureDetail?.amount?.currency_code ?? purchaseUnit?.amount?.currency_code ?? 'EUR',
+        amountValue: resolvedAmountValue,
+        amountCurrency: resolvedAmountCurrency,
         capturedAt: new Date(),
         customerEmail: capture.payer?.email_address,
-        items: (purchaseUnit?.items ?? []).map((item) => ({
-          name: item.name,
-          quantity: item.quantity,
-          unitAmount: item.unit_amount?.value ?? '',
-          currency: item.unit_amount?.currency_code ?? 'EUR',
-        })),
-        shipping: parseShippingAddress(body?.shippingAddress),
+        items: orderItems,
+        shipping: shippingAddress,
       })
     } catch (emailError) {
       if (emailError instanceof EmailError) {
         console.error('capture-order: order notification email failed', emailError.status, emailError.message)
       } else {
         console.error('capture-order: order notification email failed', emailError)
+      }
+    }
+
+    // Same rule as the email above: recording the order for the customer's order history must
+    // never turn an already-successful payment into an error response.
+    if (supabaseAdmin) {
+      try {
+        const user = await getUserFromAccessToken(body?.accessToken)
+        const { error: insertError } = await supabaseAdmin.from('commandes').insert({
+          user_id: user?.id ?? null,
+          email_client: capture.payer?.email_address ?? null,
+          articles: orderItems,
+          montant_total: Number(resolvedAmountValue),
+          numero_paypal: captureDetail?.id ?? capture.id,
+          statut: capture.status,
+          adresse_livraison: shippingAddress,
+        })
+        if (insertError) console.error('capture-order: failed to record order in Supabase', insertError)
+      } catch (dbError) {
+        console.error('capture-order: failed to record order in Supabase', dbError)
       }
     }
 

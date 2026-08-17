@@ -7,6 +7,7 @@ import { catalogueArtworks } from './data/journey'
 import { useLanguage } from './i18n'
 import { AccountPanel } from './components/AccountPanel'
 import { CartPanel } from './components/CartPanel'
+import { EnvelopeIcon, InstagramIcon } from './components/ContactIcons'
 import { Cursor } from './components/Cursor'
 import { Gallery } from './components/Gallery'
 import { Header } from './components/Header'
@@ -190,11 +191,11 @@ function App() {
           <ul className="contact__links reveal">
             <li>
               <span>{t.contact.emailLabel}</span>
-              <a href={`mailto:${site.contactEmail}`} data-cursor={t.common.go}>{site.contactEmail}</a>
+              <a href={`mailto:${site.contactEmail}`} data-cursor={t.common.go}><EnvelopeIcon /><span>{site.contactEmail}</span></a>
             </li>
             <li>
               <span>{t.contact.instagramLabel}</span>
-              <a href={site.instagramUrl} target="_blank" rel="noopener noreferrer" data-cursor={t.common.go}>{site.instagramHandle}</a>
+              <a href={site.instagramUrl} target="_blank" rel="noopener noreferrer" data-cursor={t.common.go}><InstagramIcon /><span>{site.instagramHandle}</span></a>
             </li>
           </ul>
         </section>

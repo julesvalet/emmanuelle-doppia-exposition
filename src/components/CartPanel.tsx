@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
 import type { OnApproveData } from '@paypal/paypal-js'
+import { mapAuthError } from '../accountErrors'
+import { useAddresses, type SavedAddress } from '../addresses'
+import { useAuth } from '../auth'
 import { useCart, type CartItem } from '../cart'
 import { useLanguage } from '../i18n'
 import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import { PROMO_CODE, PROMO_PRICE, PROMO_VALID_UNTIL_MS } from '../data/sales'
 import { useSales } from '../sales'
+import { AddressForm } from './AddressForm'
 
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID
 
-type Step = 'cart' | 'shipping' | 'checkout' | 'success' | 'error'
+type Step = 'cart' | 'account' | 'shipping' | 'checkout' | 'success' | 'error'
+type AccountMode = 'signin' | 'signup' | 'signup-sent'
 
 type OrderSummary = {
   orderID: string
@@ -64,6 +69,8 @@ export function CartPanel() {
   const { language, t } = useLanguage()
   const { items, itemCount, total, removeItem, setQuantity, clearCart, isOpen, closeCart } = useCart()
   const { isSalesOpen, refreshStatus } = useSales()
+  const { isConfigured: authConfigured, user, session, signIn, signUp } = useAuth()
+  const { addresses, addAddress } = useAddresses()
   const [step, setStep] = useState<Step>('cart')
   const [notice, setNotice] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
@@ -74,8 +81,24 @@ export function CartPanel() {
   const [promoApplied, setPromoApplied] = useState(false)
   const [promoMessage, setPromoMessage] = useState('')
   const [shipping, setShipping] = useState<ShippingAddress>(emptyShippingAddress)
+  const [showAddressForm, setShowAddressForm] = useState(false)
+  const [accountMode, setAccountMode] = useState<AccountMode>('signin')
+  const [accountEmail, setAccountEmail] = useState('')
+  const [accountPassword, setAccountPassword] = useState('')
+  const [accountError, setAccountError] = useState('')
+  const [accountSubmitting, setAccountSubmitting] = useState(false)
 
   useModalScrollLock(isOpen)
+
+  // Once signed in (or if accounts aren't configured on this deployment at all), automatically
+  // move past the account gate into the shipping step instead of leaving the user stranded.
+  useEffect(() => {
+    if (step !== 'account') return
+    if (!authConfigured || user) {
+      setShowAddressForm(addresses.length === 0)
+      setStep('shipping')
+    }
+  }, [step, authConfigured, user, addresses.length])
 
   const promoEligibleCart = items.length === 1 && itemCount === 1
   const promoWindowOpen = Date.now() < PROMO_VALID_UNTIL_MS
@@ -105,6 +128,11 @@ export function CartPanel() {
     const timeout = setTimeout(() => {
       setStep((current) => current === 'success' ? current : 'cart')
       setNotice('')
+      setShowAddressForm(false)
+      setAccountMode('signin')
+      setAccountEmail('')
+      setAccountPassword('')
+      setAccountError('')
     }, 400)
     return () => clearTimeout(timeout)
   }, [isOpen])
@@ -128,11 +156,54 @@ export function CartPanel() {
   const goToShipping = () => {
     if (!checkoutAllowed) return
     setNotice('')
+    if (authConfigured && !user) {
+      setStep('account')
+      return
+    }
+    setShowAddressForm(addresses.length === 0)
     setStep('shipping')
   }
 
-  const handleShippingSubmit = (event: FormEvent) => {
+  const handleAccountSubmit = async (event: FormEvent) => {
     event.preventDefault()
+    setAccountError('')
+    if (accountMode === 'signup' && accountPassword.length < 6) {
+      setAccountError(t.account.errorPasswordTooShort)
+      return
+    }
+    setAccountSubmitting(true)
+    const { error } = accountMode === 'signin'
+      ? await signIn(accountEmail, accountPassword)
+      : await signUp(accountEmail, accountPassword)
+    setAccountSubmitting(false)
+    if (error) {
+      setAccountError(mapAuthError(error, t.account))
+      return
+    }
+    if (accountMode === 'signup') {
+      setAccountMode('signup-sent')
+    }
+    // On sign-in, the effect watching `user` advances to the shipping step automatically.
+  }
+
+  const selectSavedAddress = (address: SavedAddress) => {
+    setShipping({
+      address: address.address,
+      postalCode: address.postalCode,
+      city: address.city,
+      country: address.country,
+      floor: address.floor,
+      doorName: address.doorName,
+    })
+    setStep('checkout')
+  }
+
+  const handleShippingSubmit = async (event: FormEvent) => {
+    event.preventDefault()
+    if (authConfigured && user) {
+      const result = await addAddress(shipping)
+      if (result.error) console.error('CartPanel: failed to save the address for reuse', result.error)
+    }
     setStep('checkout')
   }
 
@@ -178,7 +249,7 @@ export function CartPanel() {
 
   const completeApprovedOrder = async (orderID: string) => {
     try {
-      await requestJson('/api/capture-order', { orderID, shippingAddress: shipping })
+      await requestJson('/api/capture-order', { orderID, shippingAddress: shipping, accessToken: session?.access_token })
       setSummary({ orderID, items, total: pendingTotal ?? checkoutTotal, promoApplied: activePromo || pendingTotal === PROMO_PRICE })
       clearCart()
       setShipping(emptyShippingAddress)
@@ -261,77 +332,89 @@ export function CartPanel() {
           </div>
         )}
 
+        {step === 'account' && (
+          <div className="cart-panel__body">
+            <p className="cart-panel__notice">{t.cart.accountRequiredNotice}</p>
+            {accountMode === 'signup-sent' ? (
+              <div className="account-panel__form">
+                <p className="cart-panel__notice">{t.account.signUpSuccess}</p>
+                <button type="button" className="cart-panel__back" onClick={() => setAccountMode('signin')}>{t.account.backToSignIn}</button>
+              </div>
+            ) : (
+              <form className="account-panel__form" onSubmit={handleAccountSubmit}>
+                {accountError && <p className="cart-panel__error">{accountError}</p>}
+                <div className="account-panel__field">
+                  <label htmlFor="cart-account-email">{t.account.emailLabel}</label>
+                  <input
+                    id="cart-account-email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={accountEmail}
+                    onChange={(event) => setAccountEmail(event.target.value)}
+                  />
+                </div>
+                <div className="account-panel__field">
+                  <label htmlFor="cart-account-password">{t.account.passwordLabel}</label>
+                  <input
+                    id="cart-account-password"
+                    type="password"
+                    autoComplete={accountMode === 'signup' ? 'new-password' : 'current-password'}
+                    required
+                    minLength={6}
+                    value={accountPassword}
+                    onChange={(event) => setAccountPassword(event.target.value)}
+                  />
+                </div>
+                {accountMode === 'signup' && <p className="account-panel__hint">{t.account.signUpDeliveryNote}</p>}
+                <button type="submit" className="cart-panel__checkout" disabled={accountSubmitting}>
+                  {accountMode === 'signin' ? t.account.signInSubmit : t.account.signUpSubmit}
+                </button>
+                <p className="account-panel__switch">
+                  {accountMode === 'signin' ? (
+                    <>{t.account.noAccountYet}{' '}<button type="button" className="account-panel__link" onClick={() => { setAccountMode('signup'); setAccountError('') }}>{t.account.createAccountLink}</button></>
+                  ) : (
+                    <>{t.account.alreadyAccount}{' '}<button type="button" className="account-panel__link" onClick={() => { setAccountMode('signin'); setAccountError('') }}>{t.account.signInLink}</button></>
+                  )}
+                </p>
+              </form>
+            )}
+            <button type="button" className="cart-panel__back" onClick={() => setStep('cart')}>{t.cart.backToCart}</button>
+          </div>
+        )}
+
         {step === 'shipping' && (
           <div className="cart-panel__body">
-            <form className="account-panel__form" onSubmit={handleShippingSubmit}>
-              <div className="account-panel__field">
-                <label htmlFor="shipping-address">{t.cart.shippingAddressLabel}</label>
-                <input
-                  id="shipping-address"
-                  type="text"
-                  autoComplete="street-address"
-                  required
-                  value={shipping.address}
-                  onChange={(event) => setShipping((current) => ({ ...current, address: event.target.value }))}
-                />
+            {!showAddressForm && addresses.length > 0 ? (
+              <div className="account-panel__form">
+                <p className="account-panel__hint">{t.cart.shippingSameAddress}</p>
+                <ul className="account-panel__address-list">
+                  {addresses.map((address) => (
+                    <li key={address.id} className="account-panel__address">
+                      <div className="account-panel__address-summary">
+                        <strong>{address.address}</strong>
+                        <span>{address.postalCode} {address.city}, {address.country}</span>
+                        {address.floor && <span>{address.floor}</span>}
+                        {address.doorName && <span>{address.doorName}</span>}
+                      </div>
+                      <button type="button" className="cart-panel__checkout" onClick={() => selectSavedAddress(address)}>{t.cart.shippingUseAddress}</button>
+                    </li>
+                  ))}
+                </ul>
+                <button type="button" className="cart-panel__back" onClick={() => setShowAddressForm(true)}>{t.cart.shippingAddNew}</button>
+                <button type="button" className="cart-panel__back" onClick={() => setStep('cart')}>{t.cart.backToCart}</button>
               </div>
-              <div className="account-panel__field">
-                <label htmlFor="shipping-postal-code">{t.cart.shippingPostalCodeLabel}</label>
-                <input
-                  id="shipping-postal-code"
-                  type="text"
-                  autoComplete="postal-code"
-                  required
-                  value={shipping.postalCode}
-                  onChange={(event) => setShipping((current) => ({ ...current, postalCode: event.target.value }))}
-                />
-              </div>
-              <div className="account-panel__field">
-                <label htmlFor="shipping-city">{t.cart.shippingCityLabel}</label>
-                <input
-                  id="shipping-city"
-                  type="text"
-                  autoComplete="address-level2"
-                  required
-                  value={shipping.city}
-                  onChange={(event) => setShipping((current) => ({ ...current, city: event.target.value }))}
-                />
-              </div>
-              <div className="account-panel__field">
-                <label htmlFor="shipping-country">{t.cart.shippingCountryLabel}</label>
-                <input
-                  id="shipping-country"
-                  type="text"
-                  autoComplete="country-name"
-                  required
-                  value={shipping.country}
-                  onChange={(event) => setShipping((current) => ({ ...current, country: event.target.value }))}
-                />
-              </div>
-              <div className="account-panel__field">
-                <label htmlFor="shipping-floor">{t.cart.shippingFloorLabel} <small>({t.cart.shippingOptional})</small></label>
-                <input
-                  id="shipping-floor"
-                  type="text"
-                  autoComplete="off"
-                  value={shipping.floor}
-                  onChange={(event) => setShipping((current) => ({ ...current, floor: event.target.value }))}
-                />
-              </div>
-              <div className="account-panel__field">
-                <label htmlFor="shipping-door-name">{t.cart.shippingDoorNameLabel} <small>({t.cart.shippingOptional})</small></label>
-                <input
-                  id="shipping-door-name"
-                  type="text"
-                  autoComplete="off"
-                  value={shipping.doorName}
-                  onChange={(event) => setShipping((current) => ({ ...current, doorName: event.target.value }))}
-                />
-                <small>{t.cart.shippingDoorNameHint}</small>
-              </div>
-              <button type="submit" className="cart-panel__checkout">{t.cart.shippingContinue}</button>
-              <button type="button" className="cart-panel__back" onClick={() => setStep('cart')}>{t.cart.backToCart}</button>
-            </form>
+            ) : (
+              <AddressForm
+                idPrefix="shipping"
+                value={shipping}
+                onChange={setShipping}
+                onSubmit={handleShippingSubmit}
+                submitLabel={t.cart.shippingContinue}
+                onCancel={() => addresses.length > 0 ? setShowAddressForm(false) : setStep('cart')}
+                cancelLabel={addresses.length > 0 ? t.cart.backToAddresses : t.cart.backToCart}
+              />
+            )}
           </div>
         )}
 

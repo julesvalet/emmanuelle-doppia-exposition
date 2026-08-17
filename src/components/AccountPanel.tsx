@@ -1,32 +1,43 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { mapAuthError } from '../accountErrors'
+import { useAddresses, type AddressInput } from '../addresses'
 import { useAuth } from '../auth'
 import { useLanguage } from '../i18n'
+import { useOrders } from '../orders'
 import { useModalScrollLock } from '../hooks/useModalScrollLock'
+import { AddressForm } from './AddressForm'
 
 type Step = 'signin' | 'signup' | 'forgot' | 'signup-sent' | 'forgot-sent'
+type AccountView = 'profile' | 'orders' | 'addresses'
 
-type AccountTranslations = ReturnType<typeof useLanguage>['t']['account']
-
-function mapAuthError(message: string | null, t: AccountTranslations): string {
-  if (!message) return t.errorGeneric
-  const normalized = message.toLowerCase()
-  if (normalized.includes('invalid login credentials')) return t.errorInvalidCredentials
-  if (normalized.includes('already registered') || normalized.includes('already exists')) return t.errorEmailInUse
-  if (normalized.includes('at least 6 characters')) return t.errorPasswordTooShort
-  return t.errorGeneric
-}
+const emptyAddress: AddressInput = { address: '', postalCode: '', city: '', country: '', floor: '', doorName: '' }
 
 export function AccountPanel() {
-  const { t } = useLanguage()
+  const { language, t } = useLanguage()
   const {
     isConfigured, user, isOpen, isRecovery, closeAccount,
     signUp, signIn, signOut, sendPasswordReset, updatePassword,
   } = useAuth()
   const [step, setStep] = useState<Step>('signin')
+  const [view, setView] = useState<AccountView>('profile')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  const { orders, loading: ordersLoading } = useOrders()
+  const { addresses, loading: addressesLoading, addAddress, updateAddress, deleteAddress } = useAddresses()
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
+  const [addressForm, setAddressForm] = useState<AddressInput>(emptyAddress)
+  const [addressSubmitting, setAddressSubmitting] = useState(false)
+
+  const currencyFormatter = useMemo(() => new Intl.NumberFormat(language === 'fr' ? 'fr-FR' : 'en-GB', {
+    style: 'currency',
+    currency: 'EUR',
+  }), [language])
+  const dateFormatter = useMemo(() => new Intl.DateTimeFormat(language === 'fr' ? 'fr-FR' : 'en-GB', {
+    dateStyle: 'medium',
+  }), [language])
 
   useModalScrollLock(isOpen)
 
@@ -37,6 +48,9 @@ export function AccountPanel() {
       setEmail('')
       setPassword('')
       setErrorMessage('')
+      setView('profile')
+      setEditingAddressId(null)
+      setAddressForm(emptyAddress)
     }, 400)
     return () => clearTimeout(timeout)
   }, [isOpen])
@@ -110,10 +124,42 @@ export function AccountPanel() {
     if (error) setErrorMessage(mapAuthError(error, t.account))
   }
 
+  const startNewAddress = () => {
+    setEditingAddressId('new')
+    setAddressForm(emptyAddress)
+  }
+
+  const startEditAddress = (id: string) => {
+    const existing = addresses.find((candidate) => candidate.id === id)
+    if (!existing) return
+    setEditingAddressId(id)
+    setAddressForm({
+      address: existing.address,
+      postalCode: existing.postalCode,
+      city: existing.city,
+      country: existing.country,
+      floor: existing.floor,
+      doorName: existing.doorName,
+    })
+  }
+
+  const handleAddressSubmit = async (event: FormEvent) => {
+    event.preventDefault()
+    setAddressSubmitting(true)
+    const result = editingAddressId && editingAddressId !== 'new'
+      ? await updateAddress(editingAddressId, addressForm)
+      : await addAddress(addressForm)
+    setAddressSubmitting(false)
+    if (!result.error) {
+      setEditingAddressId(null)
+      setAddressForm(emptyAddress)
+    }
+  }
+
   const title = isRecovery
     ? t.account.updatePasswordTitle
     : user
-      ? t.account.accountTitle
+      ? view === 'orders' ? t.account.ordersTitle : view === 'addresses' ? t.account.addressesTitle : t.account.accountTitle
       : step === 'signup' ? t.account.signUpTitle
       : step === 'forgot' || step === 'forgot-sent' ? t.account.forgotTitle
       : t.account.signInTitle
@@ -134,6 +180,14 @@ export function AccountPanel() {
             <i aria-hidden="true">×</i>
           </button>
         </header>
+
+        {isConfigured && !isRecovery && user && (
+          <nav className="account-panel__tabs" aria-label={t.account.accountTitle}>
+            <button type="button" className={view === 'profile' ? 'is-active' : ''} onClick={() => setView('profile')}>{t.account.tabProfile}</button>
+            <button type="button" className={view === 'orders' ? 'is-active' : ''} onClick={() => setView('orders')}>{t.account.tabOrders}</button>
+            <button type="button" className={view === 'addresses' ? 'is-active' : ''} onClick={() => setView('addresses')}>{t.account.tabAddresses}</button>
+          </nav>
+        )}
 
         <div className="cart-panel__body">
           {!isConfigured && (
@@ -159,10 +213,83 @@ export function AccountPanel() {
             </form>
           )}
 
-          {isConfigured && !isRecovery && user && (
+          {isConfigured && !isRecovery && user && view === 'profile' && (
             <div className="account-panel__profile">
               <p className="account-panel__meta"><span>{t.account.signedInAs}</span><strong>{user.email}</strong></p>
               <button type="button" className="cart-panel__checkout" onClick={() => signOut()}>{t.account.signOut}</button>
+            </div>
+          )}
+
+          {isConfigured && !isRecovery && user && view === 'orders' && (
+            ordersLoading ? (
+              <p className="cart-panel__notice">{t.account.ordersLoading}</p>
+            ) : orders.length === 0 ? (
+              <p className="cart-panel__notice">{t.account.ordersEmpty}</p>
+            ) : (
+              <ul className="account-panel__orders">
+                {orders.map((order) => (
+                  <li key={order.id} className="account-panel__order">
+                    <div className="account-panel__order-header">
+                      <span>{t.account.orderNumberLabel} · {dateFormatter.format(new Date(order.date))}</span>
+                      <strong>{currencyFormatter.format(order.total)}</strong>
+                    </div>
+                    <ul className="cart-panel__summary-list">
+                      {order.items.map((item, index) => (
+                        <li key={index}>
+                          <span>{item.quantity} × {item.name}</span>
+                          <strong>{item.unitAmount} {item.currency}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                    <span className="account-panel__order-status">
+                      {order.status === 'COMPLETED' ? t.account.orderStatusCompleted : order.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )
+          )}
+
+          {isConfigured && !isRecovery && user && view === 'addresses' && (
+            <div className="account-panel__addresses">
+              {editingAddressId ? (
+                <AddressForm
+                  idPrefix="account-address"
+                  value={addressForm}
+                  onChange={setAddressForm}
+                  onSubmit={handleAddressSubmit}
+                  submitLabel={t.account.saveAddress}
+                  submitting={addressSubmitting}
+                  onCancel={() => { setEditingAddressId(null); setAddressForm(emptyAddress) }}
+                  cancelLabel={t.account.cancelEdit}
+                />
+              ) : (
+                <>
+                  {addressesLoading ? (
+                    <p className="cart-panel__notice">{t.account.addressesLoading}</p>
+                  ) : addresses.length === 0 ? (
+                    <p className="cart-panel__notice">{t.account.addressesEmpty}</p>
+                  ) : (
+                    <ul className="account-panel__address-list">
+                      {addresses.map((addr) => (
+                        <li key={addr.id} className="account-panel__address">
+                          <div className="account-panel__address-summary">
+                            <strong>{addr.address}</strong>
+                            <span>{addr.postalCode} {addr.city}, {addr.country}</span>
+                            {addr.floor && <span>{addr.floor}</span>}
+                            {addr.doorName && <span>{addr.doorName}</span>}
+                          </div>
+                          <div className="account-panel__address-actions">
+                            <button type="button" className="account-panel__link" onClick={() => startEditAddress(addr.id)}>{t.account.editAddress}</button>
+                            <button type="button" className="account-panel__link" onClick={() => deleteAddress(addr.id)}>{t.account.deleteAddress}</button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <button type="button" className="cart-panel__checkout" onClick={startNewAddress}>{t.account.addAddress}</button>
+                </>
+              )}
             </div>
           )}
 
